@@ -84,6 +84,7 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
     });
   });
 </script>
+<script>  
 const upAxisRotations={'Z':{rx:0,ry:0,rz:180},'-Z':{rx:180,ry:0,rz:180},'Y':{rx:-90,ry:0,rz:0},'-Y':{rx:90,ry:0,rz:0},'X':{rx:0,ry:90,rz:0},'-X':{rx:0,ry:-90,rz:0}};
 const upAxisGizmo={'Z':{X:{x:1,y:0,z:0},Y:{x:0,y:1,z:0},Z:{x:0,y:0,z:1}},'-Z':{X:{x:1,y:0,z:0},Y:{x:0,y:-1,z:0},Z:{x:0,y:0,z:-1}},'Y':{X:{x:1,y:0,z:0},Y:{x:0,y:0,z:1},Z:{x:0,y:1,z:0}},'-Y':{X:{x:1,y:0,z:0},Y:{x:0,y:0,z:-1},Z:{x:0,y:-1,z:0}},'X':{X:{x:0,y:0,z:-1},Y:{x:0,y:1,z:0},Z:{x:1,y:0,z:0}},'-X':{X:{x:0,y:0,z:1},Y:{x:0,y:1,z:0},Z:{x:-1,y:0,z:0}}};
 function setUpAxis(axis){upAxis=axis;const rot=upAxisRotations[axis];if(k){k.set('image.splats.rx',rot.rx);k.set('image.splats.ry',rot.ry);k.set('image.splats.rz',rot.rz);k.call('view.update();display.splats.update();')}var displayText=axis==='Z'?'Z (AutoCAD)':axis+'\u2191';document.getElementById('upAxisValue').textContent=displayText;['upZ','upMinusZ','upY','upMinusY','upX','upMinusX'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('primary')});var btnId='up'+axis.replace('-','Minus');var btn=document.getElementById(btnId);if(btn)btn.classList.add('primary');stopPlay();playAngle=0;pan={x:0,y:0,z:0};yaw=0;pitch=0;roll=0;distEl.value=multiplierToSlider(distance/BASE_DISTANCE);applyDistance();showToast('Up axis: '+axis+'\u2191 \u2014 PLAY \u043a\u0440\u0443\u0442\u0438\u0442 \u0432\u043e\u043a\u0440\u0443\u0433 '+axis+' \u2713')}
