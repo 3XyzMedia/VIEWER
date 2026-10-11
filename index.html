@@ -58,6 +58,12 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
 <script src="krpano.js"></script>
 <script>
 let k=null;
+
+// Сцена выбирается из ссылки.
+// Старые ссылки без параметра scene открывают scene.xml.
+const sceneParam = new URLSearchParams(location.search).get('scene');
+const sceneXml = sceneParam || 'scene.xml';
+
 const BASE_DISTANCE=200;
 let pivot={x:0,y:0,z:0};
 let yaw=0, pitch=0, roll=0, distance=BASE_DISTANCE;
@@ -136,7 +142,16 @@ function resetAll(){
 function state(){return {p:[pivot.x,pivot.y,pivot.z],o:[yaw,pitch,roll],d:distance,m:[pan.x,pan.y,pan.z],s:Number(scaleEl.value),a:Number(aaEl.value),q:sortIndex,r:perspective?1:0}}
 function encodeState(st){const buf=new ArrayBuffer(45),dv=new DataView(buf);dv.setUint8(0,1);let off=1;for(const n of [st.p[0],st.p[1],st.p[2],st.o[0],st.o[1],st.o[2],st.d,st.m[0],st.m[1],st.m[2]]){dv.setFloat32(off,n,true);off+=4}dv.setUint8(41,Math.round(clamp(st.s*100,1,100)));dv.setUint8(42,Math.round(clamp(st.a*20,0,40)));dv.setUint8(43,clamp(st.q|0,0,3));dv.setUint8(44,st.r?1:0);return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function decodeState(token){try{token=token.replace(/-/g,'+').replace(/_/g,'/');while(token.length%4)token+='=';const b=atob(token),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const dv=new DataView(u.buffer);if(dv.getUint8(0)!==1||u.length<45)return null;let off=1,a=[];for(let i=0;i<10;i++){a.push(dv.getFloat32(off,true));off+=4}return {p:a.slice(0,3),o:a.slice(3,6),d:a[6],m:a.slice(7,10),s:u[41],a:u[42],q:u[43],r:u[44]}}catch(e){return null}}
-function currentShareUrl(){return location.origin+location.pathname+'?v='+encodeState(state())}
+
+function currentShareUrl(){
+  const url = new URL(location.href);
+
+  // Сохраняем выбранную сцену и не теряем настройки камеры.
+  url.searchParams.set('scene', sceneXml);
+  url.searchParams.set('v', encodeState(state()));
+
+  return url.toString();
+}
 function showShareUrl(url){document.getElementById('shareUrl').value=url;shareLinkEl.href=url;shareLinkEl.textContent=url?'\u2197 \u041e\u0442\u043a\u0440\u044b\u0442\u044c \u044d\u0442\u0443 \u0441\u0441\u044b\u043b\u043a\u0443':'\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u044d\u0442\u0443 \u0441\u0441\u044b\u043b\u043a\u0443'}
 async function copyText(t){try{await navigator.clipboard.writeText(t)}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}}
 function copyLink(){const st=state();sharedStartState=JSON.parse(JSON.stringify(st));const url=currentShareUrl();history.replaceState(null,'',url);showShareUrl(url);copyText(url).then(()=>showToast('\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043a\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0430 \u2713'))}
@@ -249,6 +264,6 @@ async function init(){
   // shared URL won't get this key, so their Reset returns to the shared view.
   if(!fromURL){try{if(!localStorage.getItem('3XyzMedia_factory_view_v1'))localStorage.setItem('3XyzMedia_factory_view_v1',JSON.stringify(state()))}catch(e){}}
 }
-embedpano({target:'pano',xml:'scene.xml',html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:async function(krpano){k=krpano;await init();const _p=document.getElementById('panel');axesCanvas.classList.toggle('shifted',!_p.classList.contains('collapsed'));drawAxes();showToast('3XyzMedia RGB Bridge\u2122 v4.19 \u0433\u043e\u0442\u043e\u0432 \u2713')}});
+embedpano({target:'pano',xml:sceneXml,html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:async function(krpano){k=krpano;await init();const _p=document.getElementById('panel');axesCanvas.classList.toggle('shifted',!_p.classList.contains('collapsed'));drawAxes();showToast('3XyzMedia RGB Bridge\u2122 v4.19 \u0433\u043e\u0442\u043e\u0432 \u2713')}});
 </script>
 </body></html>
