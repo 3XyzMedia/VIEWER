@@ -5,7 +5,7 @@
         <view hlookat="0" vlookat="0" fov="90" />
 
         <splats 
-            url="https://drive.google.com/uc?export=download&id=1sgY1--0OfsZR5taMo8PBhL3ynfWfe2_u" 
+            url="https://drive.google.com/uc?export=download&amp;id=1sgY1--0OfsZR5taMo8PBhL3ynfWfe2_u" 
             scale="1.0" 
             position="0 0 0" 
             rotation="0 0 0"
