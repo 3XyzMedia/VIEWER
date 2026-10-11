@@ -264,6 +264,6 @@ async function init(){
   // shared URL won't get this key, so their Reset returns to the shared view.
   if(!fromURL){try{if(!localStorage.getItem('3XyzMedia_factory_view_v1'))localStorage.setItem('3XyzMedia_factory_view_v1',JSON.stringify(state()))}catch(e){}}
 }
-embedpano({target:'pano',xml:sceneXml,html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:async function(krpano){k=krpano;await init();const _p=document.getElementById('panel');axesCanvas.classList.toggle('shifted',!_p.classList.contains('collapsed'));drawAxes();showToast('3XyzMedia RGB Bridge\u2122 v4.19 \u0433\u043e\u0442\u043e\u0432 \u2713')}});
+embedpano({target:'pano',xml:scene.Xml,html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:async function(krpano){k=krpano;await init();const _p=document.getElementById('panel');axesCanvas.classList.toggle('shifted',!_p.classList.contains('collapsed'));drawAxes();showToast('3XyzMedia RGB Bridge\u2122 v4.19 \u0433\u043e\u0442\u043e\u0432 \u2713')}});
 </script>
 </body></html>
