@@ -57,6 +57,48 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
 <div id="toast"></div><div id="fps">FPS &#8212;</div>
 <script src="krpano.js"></script>
 <script>
+<!doctype html>
+<html lang="ru">
+<head>
+    <!-- Все содержимое head -->
+</head>
+<body>
+    <!-- Все элементы интерфейса -->
+    
+    <!-- ВАЖНОЕ МЕСТО ВСТАВКИ -->
+    <script src="krpano.js"></script>
+    <script>
+        // Вставляем новую функцию для получения параметров URL
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name) || 'scene_model1.xml'; // значение по умолчанию
+        }
+
+        let k = null;
+        
+        window.addEventListener('load', function() {
+            // Получаем имя сцены из параметра xml в URL
+            const sceneUrl = getUrlParam('xml');
+            
+            k = new krpano({
+                target: 'pano',
+                onready: function() {
+                    // Загружаем указанную сцену
+                    k.load(sceneUrl);
+                    
+                    // Здесь продолжается ваш существующий код
+                    const BASE_DISTANCE = 200;
+                    let pivot = {x:0,y:0,z:0};
+                    // ... остальной код
+                }
+            });
+        });
+    </script>
+    <!-- КОНЕЦ ВСТАВКИ -->
+</body>
+</html>
+</script>  
+<script>
 let k=null;
 const BASE_DISTANCE=200;
 let pivot={x:0,y:0,z:0};
