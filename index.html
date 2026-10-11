@@ -63,6 +63,9 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
   }
 
   let k = null;
+  const BASE_DISTANCE = 200;
+  let pivot = {x: 0, y: 0, z: 0};
+  let yaw = 0, pitch = 0, roll = 0, distance = BASE_DISTANCE;
 
   window.addEventListener('load', function() {
     const sceneUrl = getUrlParam('xml');
@@ -71,10 +74,7 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
       target: 'pano',
       onready: function() {
         k.load(sceneUrl);
-
-        const BASE_DISTANCE = 200;
-        let pivot = {x:0, y:0, z:0};
-        // сюда вставьте остальной ваш код (без повторного объявления k)
+        // сюда можно добавить логику работы с yaw, pitch, roll, distance, если она нужна
       }
     });
   });
