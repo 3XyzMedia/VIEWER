@@ -1,13 +1,11 @@
 <krpano version="1.20">
-    <!-- Подключаем плагин. Путь относительный. Файл должен лежать в plugins/splats.js -->
     <include url="plugins/splats.js" />
     
     <scene name="scene_0" title="Zvon Splats">
         <view hlookat="0" vlookat="0" fov="90" />
 
-        <!-- ВАЖНО: замени имя файла ниже на реальное имя твоего .spz файла в папке model -->
         <splats 
-            url="model/my_splat_model.spz" 
+            url="https://drive.google.com/uc?export=download&id=1sgY1--0OfsZR5taMo8PBhL3ynfWfe2_u" 
             scale="1.0" 
             position="0 0 0" 
             rotation="0 0 0"
