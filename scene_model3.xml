@@ -1,5 +1,5 @@
 <krpano version="1.20">
-    <!-- Исправленный путь к плагину -->
+    <!-- Путь относительный, без %SWFPATH% -->
     <include url="plugins/splats.js" />
     
     <scene name="scene_0" title="Zvon Splats">
