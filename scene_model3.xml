@@ -1,9 +1,8 @@
-<krpano version="1.24" title="3XyzMedia RGB Bridge™ — Gaussian Viewer v4.14">
+<krpano version="1.24" title="3XyzMedia RGB Bridge">
     <image>
         <splats url="https://downloader.disk.yandex.ru/disk/20353a469529da5db58cacf5cb92239d6d186f3d9456979b5005d74aaab26bda/6acc33c5/6zJg5PAe0FgdXxscD6slcaXLD0HqDPV7ru7L1u2NMJW0X5Fer4ofCDdzkq-1O4b2KMyH0Rlhkz5AMnRBQ3RUCg%3D%3D?uid=0&amp;filename=zvon.com.ply&amp;disposition=attachment&amp;hash=FbMRtso9Wygj53tpGjN57yk2nKGBP2O48GmLbejx2kplkX2I/B5PvInsgsa205/tq/J6bpmRyOJonT3VoXnDag%3D%3D&amp;limit=0&amp;content_type=application%2Foctet-stream&amp;owner_uid=30716065&amp;fsize=97686470&amp;hid=fb7d544f902b79b22c3e3a0b7867e345&amp;media_type=executable&amp;tknv=v3&amp;is_direct_zip_experiment=1"
-       scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
-       rotationorder="YXZ" antialias="0.30"/>
-
+                scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
+                rotationorder="YXZ" antialias="0.30"/>
     </image>
 
     <display>
