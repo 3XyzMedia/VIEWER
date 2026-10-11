@@ -1,0 +1,11 @@
+<krpano version="1.24" title="3XyzMedia RGB Bridge - Gaussian Viewer v4.14">
+    <image>
+        <splats url="https://downloader.disk.yandex.ru/disk/53b9c145bd9dcb5cc241a77b2ecdd669bc84bd0231b5c88ce2c14e681b751e/6acc2f5c/6zJg5PAe0FgdXxscD6slcaXLD0HqDPV7ru7L1u2NMJW0X5Fer4ofCDdzkq-1O4b2KMyH0Rlhkz5AMnRBQ3RUCg%3D%3D?uid=30716065\u0026filename=zvon.com.ply\u0026disposition=attachment\u0026hash=\u0026limit=0\u0026content_type=application%2Foctet-stream\u0026owner_uid=30716065\u0026fsize=97686470\u0026hid=fb7d544f902b79b22c3e3a0b7867e345\u0026media_type=executable\u0026tknv=v3\u0026is_direct_zip_experiment=1\u0026etag=983d55d61c110cd6058d5caafb7d9994"
+              scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
+              rotationorder="YXZ" antialias="0.30"/>
+    </image>
+    <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200"
+          fovtype="VFOV" fov="70" fovmin="15" fovmax="150"
+          maxtilt="179" mintilt="-179"/>
+    <control locked="true"/>
+</krpano>
