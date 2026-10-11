@@ -1,13 +1,11 @@
-<krpano version="1.24" title="3XyzMedia RGB Bridge™ — Gaussian Viewer v4.14">
+<krpano version="1.24" title="3XyzMedia RGB Bridge - Gaussian Viewer v4.14">
     <image>
-        <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/Buity_3dgs.ply"
-                pivot="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/Buity_3dgs.ply"
-                scale="1.0"
-                tx="0" ty="0" tz="0"
-                rx="0" ry="0" rz="180"
-                rotationorder="YXZ"
-                antialias="0.30" />
+        <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/Buity_3dgs.ply" 
+                scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180" 
+                rotationorder="YXZ" antialias="0.30"/>
     </image>
-    <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200" fovtype="VFOV" fov="70" fovmin="15" fovmax="150" maxtilt="179" mintilt="-179" />
-    <control locked="true" />
+    <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200" 
+          fovtype="VFOV" fov="70" fovmin="15" fovmax="150" 
+          maxtilt="179" mintilt="-179"/>
+    <control locked="true"/>
 </krpano>
