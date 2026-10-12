@@ -7,6 +7,8 @@
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;font-family:Arial,sans-serif}
 #pano{position:absolute;inset:0}
+/* Screen-space snow: independent from krpano camera/model transforms. */
+#snowOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:5;pointer-events:none;display:none}
 #surface{position:absolute;inset:0;z-index:10;cursor:grab;touch-action:none; -webkit-user-select:none;user-select:none}
 #surface.dragging{cursor:grabbing}
 #toolbar{position:fixed;left:16px;top:16px;z-index:50;display:flex;gap:6px;padding:6px;border-radius:12px;background:rgba(5,8,14,.72);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12)}
@@ -35,7 +37,7 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
 </style>
 </head>
 <body>
-<div id="pano"></div><div id="surface"></div><canvas id="axesCanvas" width="132" height="132"></canvas>
+<div id="pano"></div><canvas id="snowOverlay" aria-hidden="true"></canvas><div id="surface"></div><canvas id="axesCanvas" width="132" height="132"></canvas>
 <div id="toolbar"><button class="tool" id="toolAxes" title="Показать / скрыть WORLD XYZ">XYZ</button><button class="tool play" id="toolPlay" title="Плавный круг камеры вокруг pivot">&#9654; PLAY</button><button class="tool" id="toolHome" title="Сброс камеры вокруг текущего pivot">&#8962;</button><button class="tool" id="toolReset" title="Полный сброс">&#8634;</button></div>
 <div id="brand">3XyzMedia RGB Bridge&#8482;<span id="subtitle">Каждый объект начинается с цвета&#8230;</span><span id="contact">Contact: &#128231; xyzmedia3@yandex.ru</span></div>
 <div id="help">1 палец / ЛКМ &#8212; вращение<br>2 пальца &#8212; zoom + перемещение &#183; колесо &#8212; zoom<br>ПКМ/MMB &#8212; pan &#183; Shift+ЛКМ &#8212; roll<br>PLAY &#8212; плавный круг &#183; HOME &#8212; сброс</div>
@@ -60,9 +62,71 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
 let k=null;
 
 // Сцена выбирается из ссылки.
-// Старые ссылки без параметра scene открывают scene.xml.
-const sceneParam = new URLSearchParams(location.search).get('scene');
-const sceneXml = sceneParam || 'scene.xml';
+// Основной параметр — xml. Для совместимости принимаем и старый параметр scene.
+// Ссылки без обоих параметров по-прежнему открывают scene.xml.
+const initialParams = new URLSearchParams(location.search);
+const sceneXml = initialParams.get('xml') || initialParams.get('scene') || 'scene.xml';
+
+// Screen-space snow. It is enabled only for scene_model2.xml and never uses
+// krpano's view matrix, so camera orbit/pan cannot rotate or translate flakes.
+const snowCanvas = document.getElementById('snowOverlay');
+const snowCtx = snowCanvas.getContext('2d', { alpha: true });
+const snowEnabled = sceneXml.split('/').pop().split('?')[0] === 'scene_model2.xml';
+let snowW = 0, snowH = 0, snowDpr = 1, snowParticles = [], snowFrame = 0, snowLastTime = 0;
+function resizeSnowOverlay(){
+  snowDpr = Math.min(window.devicePixelRatio || 1, 2);
+  snowW = window.innerWidth; snowH = window.innerHeight;
+  snowCanvas.width = Math.round(snowW * snowDpr);
+  snowCanvas.height = Math.round(snowH * snowDpr);
+  snowCanvas.style.width = snowW + 'px';
+  snowCanvas.style.height = snowH + 'px';
+  snowCtx.setTransform(snowDpr, 0, 0, snowDpr, 0, 0);
+}
+function makeSnowParticle(randomY = false){
+  const depth = 0.25 + Math.random() * 0.75;
+  return {
+    x: Math.random() * Math.max(1, snowW),
+    y: randomY ? Math.random() * Math.max(1, snowH) : -4 - Math.random() * 24,
+    r: 0.45 + depth * 1.65,
+    vy: 0.45 + depth * 1.65,
+    vx: (Math.random() - 0.5) * 0.55,
+    drift: Math.random() * Math.PI * 2,
+    driftSpeed: 0.35 + Math.random() * 0.9,
+    alpha: 0.22 + depth * 0.63,
+    depth
+  };
+}
+function startScreenSnow(){
+  if(!snowEnabled || !snowCtx) return;
+  snowCanvas.style.display = 'block';
+  resizeSnowOverlay();
+  const count = Math.min(window.innerWidth < 700 ? 650 : 1100, Math.max(250, Math.floor(snowW * snowH / 1250)));
+  snowParticles = Array.from({length: count}, () => makeSnowParticle(true));
+  snowLastTime = 0;
+  if(snowFrame) cancelAnimationFrame(snowFrame);
+  function drawSnow(now){
+    if(!snowEnabled) return;
+    const dt = snowLastTime ? Math.min(2.2, (now - snowLastTime) / 16.67) : 1;
+    snowLastTime = now;
+    snowCtx.clearRect(0, 0, snowW, snowH);
+    for(const p of snowParticles){
+      p.drift += 0.012 * p.driftSpeed * dt;
+      p.x += (p.vx + Math.sin(p.drift) * 0.38) * dt;
+      p.y += p.vy * dt;
+      if(p.y > snowH + 8){ Object.assign(p, makeSnowParticle(false)); p.y = -4; }
+      if(p.x < -8) p.x = snowW + 5;
+      else if(p.x > snowW + 8) p.x = -5;
+      snowCtx.globalAlpha = p.alpha;
+      snowCtx.fillStyle = '#ffffff';
+      snowCtx.beginPath();
+      snowCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      snowCtx.fill();
+    }
+    snowCtx.globalAlpha = 1;
+    snowFrame = requestAnimationFrame(drawSnow);
+  }
+  snowFrame = requestAnimationFrame(drawSnow);
+}
 
 const BASE_DISTANCE=200;
 let pivot={x:0,y:0,z:0};
@@ -146,8 +210,11 @@ function decodeState(token){try{token=token.replace(/-/g,'+').replace(/_/g,'/');
 function currentShareUrl(){
   const url = new URL(location.href);
 
-  // Сохраняем выбранную сцену и не теряем настройки камеры.
-  url.searchParams.set('scene', sceneXml);
+  // Сохраняем выбранную модель именно в параметре xml,
+  // который использует embedpano при загрузке сцены.
+  // Старый параметр scene удаляем, чтобы он не расходился с xml.
+  url.searchParams.set('xml', sceneXml);
+  url.searchParams.delete('scene');
   url.searchParams.set('v', encodeState(state()));
 
   return url.toString();
@@ -253,7 +320,7 @@ document.getElementById('upY').addEventListener('click',()=>setUpAxis('Y'));
 document.getElementById('upMinusY').addEventListener('click',()=>setUpAxis('-Y'));
 document.getElementById('upX').addEventListener('click',()=>setUpAxis('X'));
 document.getElementById('upMinusX').addEventListener('click',()=>setUpAxis('-X'));document.getElementById('toolPlay').addEventListener('click',()=>playOn?stopPlay():startPlay());document.getElementById('toolHome').addEventListener('click',resetCamera);document.getElementById('toolReset').addEventListener('click',resetAll);document.getElementById('reset2').addEventListener('click',resetCamera);/* pivotReset removed */document.getElementById('sort').addEventListener('click',()=>{sortIndex=(sortIndex+1)%sortModes.length;applySort()});document.getElementById('mode').addEventListener('click',()=>{perspective=!perspective;applyMode()});document.getElementById('saveView').addEventListener('click',saveView);document.getElementById('loadView').addEventListener('click',loadView);document.getElementById('copyLink').addEventListener('click',copyLink);document.getElementById('clearView').addEventListener('click',()=>{localStorage.removeItem('3XyzMedia_single_view_v3');showShareUrl('');showToast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u0443\u0434\u0430\u043b\u0435\u043d\u043e')});
-window.addEventListener('resize',()=>{updateView();drawAxes()});window.addEventListener('keydown',ev=>{if(ev.key==='r'||ev.key==='R')resetCamera();if(ev.code==='Space'&&!ev.repeat){ev.preventDefault();playOn?stopPlay():startPlay()}});
+window.addEventListener('resize',()=>{updateView();drawAxes();if(snowEnabled)resizeSnowOverlay()});window.addEventListener('keydown',ev=>{if(ev.key==='r'||ev.key==='R')resetCamera();if(ev.code==='Space'&&!ev.repeat){ev.preventDefault();playOn?stopPlay():startPlay()}});
 async function init(){
   await loadPivotFile();
   const fromURL=loadURLState();
@@ -264,6 +331,6 @@ async function init(){
   // shared URL won't get this key, so their Reset returns to the shared view.
   if(!fromURL){try{if(!localStorage.getItem('3XyzMedia_factory_view_v1'))localStorage.setItem('3XyzMedia_factory_view_v1',JSON.stringify(state()))}catch(e){}}
 }
-embedpano({target:'pano',xml: new URLSearchParams(window.location.search).get('xml') || 'scene.xml',html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:async function(krpano){k=krpano;await init();const _p=document.getElementById('panel');axesCanvas.classList.toggle('shifted',!_p.classList.contains('collapsed'));drawAxes();showToast('3XyzMedia RGB Bridge\u2122 v4.19 \u0433\u043e\u0442\u043e\u0432 \u2713')}});
+embedpano({target:'pano',xml:sceneXml,html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:async function(krpano){k=krpano;await init();const _p=document.getElementById('panel');axesCanvas.classList.toggle('shifted',!_p.classList.contains('collapsed'));drawAxes();startScreenSnow();showToast('3XyzMedia RGB Bridge\u2122 v4.24 \u0433\u043e\u0442\u043e\u0432 \u2713')}});
 </script>
 </body></html>
