@@ -10,16 +10,4 @@
           maxtilt="179" mintilt="-179"/>
 
     <control locked="true"/>
-
-    <plugin name="snow"
-            url="snow.js"
-            mode="snow"
-            flakes="1500"
-            color="0xFFFFFF"
-            floor="0.3"
-            speed="1.0"
-            spreading="4.0"
-            shake="4.0"
-            speedvariance="2.0"
-            wind="0.0"/>
 </krpano>
