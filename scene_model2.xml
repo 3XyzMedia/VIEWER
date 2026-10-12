@@ -1,11 +1,27 @@
+```xml
 <krpano version="1.24" title="3XyzMedia RGB Bridge - Gaussian Viewer v4.14">
     <image>
         <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/micro.ply"
                 scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
                 rotationorder="YXZ" antialias="0.30"/>
     </image>
+
     <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200"
           fovtype="VFOV" fov="70" fovmin="15" fovmax="150"
           maxtilt="179" mintilt="-179"/>
+
     <control locked="true"/>
+
+    <plugin name="snow"
+            url="snow.js"
+            mode="snow"
+            flakes="1500"
+            color="0xFFFFFF"
+            floor="0.3"
+            speed="1.0"
+            spreading="4.0"
+            shake="4.0"
+            speedvariance="2.0"
+            wind="0.0"/>
 </krpano>
+```
