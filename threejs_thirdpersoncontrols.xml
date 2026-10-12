@@ -1,0 +1,514 @@
+<krpano>
+	
+	<!--
+		Third Person Controls
+		- An Animations and Coding Demo
+	-->
+
+	<include url="%VIEWER%/plugins/combobox.xml" />
+	<include url="%VIEWER%/plugins/iphone_fullscreen_swipe.xml" />
+	<include url="%VIEWER%/plugins/webvr.xml" />
+	<include url="%VIEWER%/plugins/vr_and_anaglyph_buttons.xml" />
+	
+	<webvr postracking="true" />
+	
+	<view fovtype="VFOV" fov="90" fovmin="20" fovmax="150" limitview="lookat" vlookatmin="-30" vlookatmax="90" />
+	
+	<plugin api="threejs" url="%VIEWER%/plugins/threejs_krpanoplugin.js" keep="true" />
+	
+	<display depthbuffer="true" depthrange="5,100000" />
+
+
+	<layer name="infos" keep="true"
+		type="text"
+		align="left" edge="leftbottom" x="20" y="-20"
+		bg="false"
+		css="font-family:monospace; color:#FFFFFF; font-size:12px;"
+		trimwhitespace="true"
+		txtshadow="0 1 4 0x000000 1.0"
+		enabled="false"
+		/>
+		
+	<layer name="infos2" keep="true"
+		type="text"
+		text="Walk around using the[br]Keyboard Arrow- or W,A,S,D-keys[br]SHIFT-key for Walk or Running"
+		align="center" y="25%"
+		bg="false"
+		css="font-family:monospace; color:#FFFFFF; font-size:12px;"
+		textalign="center"
+		txtshadow="0 1 4 0x000000 1.0"
+		enabled="false"
+		onloaded="delayedcall(3.0, tween(alpha,0.0,0.5); );"
+		devices="desktop" 
+		/>
+		
+	
+	
+	<scene name="simple" autoload="true">
+		
+		<threejs ambientlight="0.2" envmapurl="preview" />
+		
+		<image objectsize="infinity">
+			<preview url="../webvr/panos/intro/preview.jpg" />
+			<cube url="../webvr/panos/intro/pano_%s.jpg" />
+		</image>
+		
+		<hotspot name="floor"
+			type="threejs"
+			url="custom"
+			depth="0"
+			hittest="true"
+			ty="160"
+			onloaded="create_custom_threejs_object()"
+			enabled="false"
+			/>
+		
+		<action name="create_custom_threejs_object" type="js"><![CDATA[
+			
+			var THREE = krpano.threejs.THREE;
+			var group = caller.threejsobject;
+			
+			var material = new THREE.MeshStandardMaterial({color:0xFFFFFF, roughness:4, metalness:0.5, side:THREE.DoubleSide});
+			
+			var textureLoader = new THREE.TextureLoader();
+			textureLoader.load( krpano.parsepath('%CURRENTXML%/models/floor.jpg'), 
+				function (map)
+				{
+					map.anisotropy = 4;
+					map.colorSpace = THREE.SRGBColorSpace;
+					map.wrapS = THREE.MirroredRepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set(100, 100);
+					
+					material.map = map;
+					material.needsUpdate = true;
+				}
+			);
+			
+			// add a large floor
+			var mesh = new THREE.Mesh( new THREE.PlaneGeometry(1000, 1000), material );
+			mesh.rotation.x = -Math.PI/2;
+			mesh.receiveShadow = true;
+			mesh.castShadow = true;
+			group.add( mesh );
+			
+		]]></action>
+		
+		<hotspot name="sun"
+			type="threejslight"
+			mode="sun"
+			ath="0" 
+			atv="-18"
+			intensity="4.0"
+			color="0xFFFFFF"
+			castshadow="true"
+			shadowmaprange="3000"
+			shadowmapres="2048"
+			shadowmapnear="1000.0"
+			shadowmapfar="50000.0"
+			shadowmapbias="0.000001"
+			shadowmapnormalbias="0.07"
+			/>
+
+	</scene>
+	
+	
+	<scene name="tuscany" onstart="callwith(hotspot[player],tween(tx|ty|tz, 0|0|0));">
+		
+		<threejs ambientlight="0.1" />
+		
+		<image objectsize="infinity">
+			<sphere url="../depthmap/tuscany/sky.jpg" />
+		</image>
+		
+		<hotspot name="tuscany"
+			type="threejs"
+			url="../depthmap/tuscany/tuscany.obj"
+			convertmaterials="all-to-lambert"
+			enabled="false"
+			depth="0"
+			scale="0.01"
+			rx="-90"
+			tx="-214" ty="10863" tz="14603"
+			hittest="true"
+			castshadow="true"
+			receiveshadow="true"
+			/>
+			
+		<hotspot name="light"
+			type="threejslight" 
+			mode="sun" 
+			castshadow="true"
+			intensity="2.0"
+			sundistance="20000"
+			colortemperature="5000"
+			ath="-87" atv="-16"
+			shadowmapnear="10000"
+			shadowmapfar="30000"
+			shadowmapbias="0.0"
+			shadowmapnormalbias="0.005"
+			shadowmaprange="3000"
+			shadowmapres="4096"
+			/>
+		
+	</scene>
+	
+	
+	
+	
+	<!-- a combobox/selectbox to switch between scenes -->
+	<combobox name="selectscene" design="default" align="lefttop" x="20" y="20" keep="true">
+		<item name="simple"  caption="Scene: Simple"   onclick="loadscene(simple,  null, MERGE|KEEPMOVING|KEEPLIMITS,COLORBLEND(2));" />
+		<item name="tuscany" caption="Scene: Tuscany"  onclick="loadscene(tuscany, null, MERGE|KEEPMOVING|KEEPLIMITS,COLORBLEND(2));" />
+	</combobox>
+		
+		
+	<!-- the player model with idle, walk and run animations -->
+	<hotspot name="player" keep="true"
+		type="threejs"
+		url="models/soldier.glb"
+		scale="1.0"
+		depth="0"
+		ty="160"
+		convertmaterials="all-to-standard"
+		hittest="false"
+		enabled="false"
+		/>
+
+	
+	<!-- remove the default keyboard controls -->
+	<control keycodesleft="" keycodesright="" keycodesup="" keycodesdown="" keydownrepeat="false" />
+
+	<!-- keyboard keycodes -->
+	<keyb up="38" down="40" left="37" right="39" w="87" a="65" s="83" d="68" shift="16" ctrl="17" space="32" pageup="33" pagedown="34" />
+	
+	<!-- state variables for walking -->
+	<walkaround forward.int="0" backward.int="0" left.int="0" right.int="0" up.int="0" down.int="0" faster.int="0" jump.int="0" />
+	
+	<!-- keyboard event handling -->
+	<events name="thirdperson_controls" keep="true"
+		onkeydown="thirdperson_controls_keyevents(1);"
+		onkeyup="thirdperson_controls_keyevents(0);"
+		/>
+	
+	
+	<action name="thirdperson_controls_keyevents" args="keypressed" scope="local">
+		if( keycode == keyb.up    OR keycode == keyb.w, copy(walkaround.forward,  keypressed);
+		  , keycode == keyb.down  OR keycode == keyb.s, copy(walkaround.backward, keypressed);
+		  , keycode == keyb.left  OR keycode == keyb.a, copy(walkaround.left,     keypressed);
+		  , keycode == keyb.right OR keycode == keyb.d, copy(walkaround.right,    keypressed);
+		  , keycode == keyb.shift AND keypressed,       toggle(walkaround.faster); 
+		  , keycode == keyb.space,                      copy(walkaround.jump,     keypressed);
+		);
+	</action>
+	
+	
+	<!-- some very basic third-person controls -->
+	<action name="thirdperson_controls" autorun="onstart" type="js"><![CDATA[
+		
+		var M_RAD2DEG = 180.0 / Math.PI;
+		var M_DEG2RAD = Math.PI / 180.0;
+		
+		var view       = krpano.view;
+		var walkaround = krpano.walkaround;
+		
+		var player = krpano.hotspot.getItem("player");
+		
+		var playerheight = 173;
+		var collisionheight = 100;
+		var stopdistance = 50;
+		var moveback = 1.2;
+		var bounceback = 1.2;
+		var walkspeed = 1.1;
+		var runspeed = 2.8;
+		var gravity = 4.0;
+		var jumpgravity = 1.5;
+		var jumpinertia = 15.0;
+		var cameraoffset = 260;
+		var cameraoffset_min = 50;
+	
+		var vx=0, vy=0, vz=0;	// speed vector
+		var dx, dy, dz;
+		var olddir = 0;
+		var cameraoffsetdyn = 1000;
+
+		krpano.events.addListener("onviewrender", function()
+		{
+			var friction     = 0.7;
+			var acceleration = 1.0;
+			var inertia      = 1.0;
+			
+			// adjust the friction and acceleration depending on the framerate (an experimental API)
+			if (krpano.display.getAdaptiveFrictions)
+			{
+				var adjustedmovment = krpano.display.getAdaptiveFrictions(friction, acceleration/friction, inertia, "fast");
+				friction     = adjustedmovment.friction;
+				acceleration = adjustedmovment.accel * friction;
+				inertia      = adjustedmovment.inertia;
+			}
+		
+			var wx = walkaround.right - walkaround.left;
+			var wz = walkaround.forward - walkaround.backward;
+			
+			var ismoving = wx != 0 || wz != 0;
+			
+			if (ismoving)
+			{
+				// get the movement direction based on current viewing direction
+				var r = view.hlookat * M_DEG2RAD;
+				var sinr = Math.sin(r);
+				var cosr = Math.cos(r);
+				dx = wz*sinr + wx*cosr;
+				dz = wz*cosr - wx*sinr;
+				
+				var newdir = Math.atan2(dx,dz) * M_RAD2DEG;
+				
+				newdir = newdir - Math.round((newdir - olddir)/360)*360;
+	
+				if (newdir != olddir)
+				{
+					if (Math.abs(newdir-olddir) > 30)
+						krpano.tween(player, {ry:newdir}, 0.3);	// apply large changes with an animation
+					else
+						player.ry = newdir;
+					
+					olddir = newdir;
+				}
+				
+				var dl = Math.sqrt(dx*dx + dz*dz);
+				dl = ((dl > 0.2) ? 1.0 / dl : 0.0) * acceleration * (walkaround.faster ? runspeed : walkspeed);
+				vx += dx * dl;
+				vz += dz * dl;
+			}
+			
+			vx *= friction;
+			vz *= friction;
+
+			var vspeed2 = Math.sqrt(vx*vx + vz*vz);
+		
+			// check ground collision
+			var floorhit = krpano.actions.raycast(player.tx, player.ty - collisionheight, player.tz, 0, +1.0, 0);
+			if (floorhit && floorhit.d > 0)
+			{
+				var onground = false;
+				var foot_floor_distance = floorhit.d - collisionheight;
+			
+				if (floorhit.d <= collisionheight+1)
+				{
+					onground = true;
+					player.ty = floorhit.y;
+					vy = 0;
+				}
+				else
+				{
+					// apply gravity, but use a lower gravity when jumping and holding the jump key
+					vy += (vy < 0.0 && walkaround.jump ? jumpgravity : gravity) * acceleration;
+				}
+				
+				// allow little jumps, but only when running (because the model has no jump animations)
+				if (onground && walkaround.jump && vspeed2 > 5)
+				{
+					vy -= jumpinertia / inertia;
+				}
+			}
+			else
+			{
+				// no floor below? check above and put there
+				vy = 0;
+				
+				var floorhit = krpano.actions.raycast(player.tx, player.ty, player.tz, 0, -1.0, 0);
+				if (floorhit && floorhit.d > 0)
+				{
+					player.ty = floorhit.y;
+				}
+			}
+		
+			var vspeed3 = Math.sqrt(vx*vx + vy*vy + vz*vz);
+			if ( vspeed3 > 0 )
+			{
+				// is there something in the movement direction?
+				var hit = krpano.actions.raycast(player.tx, player.ty - collisionheight, player.tz, vx, vy, vz);
+				if (hit && hit.d > 0 && hit.d < stopdistance)
+				{
+					if ( vy < 0 && -vy > vspeed2 && (player.ty - playerheight < hit.y))
+					{
+						// hit the ceiling
+						player.ty = hit.y + playerheight;
+						vy = 0;
+					}
+					
+					 if (vspeed2 > 0)
+					{
+						// hit a wall
+						dx = player.tx - hit.x;
+						dz = player.tz - hit.z;
+						
+						// slide along walls
+						var pushback = -(stopdistance - Math.sqrt(dx*dx + dz*dz)) / vspeed2 * moveback;
+								
+						player.tx += pushback * vx;
+						player.tz += pushback * vz;
+								
+						var hitscale = (vx*hit.nx + vz*hit.nz) * bounceback;
+						vx -= hit.nx * hitscale;
+						vz -= hit.nz * hitscale;
+					}
+				}
+			
+				player.tx += vx;
+				player.ty += vy;
+				player.tz += vz;
+			}
+
+			if (player.animations)
+			{
+				// play animations based on the current state
+				
+				if (vspeed2 > 1)
+				{
+					var run_or_walk_animation = player.animations.getItem(walkaround.faster ? "run" : "walk");
+					if (run_or_walk_animation)
+					{
+						run_or_walk_animation.play("repeat", 0.2, true);
+						run_or_walk_animation.timescale = 1.0;
+					}
+				}
+				else
+				{
+					var idle_animation = player.animations.getItem("idle");
+					if (idle_animation)
+					{
+						idle_animation.play("repeat", 0.1, true);
+					}
+				}
+			}
+			
+			// do some fancy 'follow the player' camera control
+			if (!krpano.webvr || !krpano.webvr.isenabled)		// but not for VR - there the camera is controlled by the headset-tracking
+			{
+				var offset = cameraoffset;
+				
+				// optionally: add an camera offset and do some 'dolly-effect' on zooming
+				if (0)
+				{
+					offset = 50 + 100 * 1.0 / Math.tan(0.5*view.fov*Math.PI/180.0);
+				}
+				
+				dx = -view.dir.x;
+				dy = -view.dir.y;
+				dz = -view.dir.z;
+				
+				// reduce the camera offset when the camera would be behind a wall	
+				var cameradistance = krpano.actions.raycast(player.tx, player.ty-100, player.tz, dx,dy,dz);
+				if (cameradistance && cameradistance.d > 0)
+				{
+					if ((cameradistance.d - cameraoffset_min) < offset)
+					{
+						offset = cameradistance.d  - cameraoffset_min;
+						if (offset < cameraoffset_min)
+							offset = cameraoffset_min;
+					}
+				}
+				
+				// apply the offset change only slowly/animated
+				cameraoffsetdyn = cameraoffsetdyn*0.9 + 0.1*offset;
+				
+				view.tx = player.tx + dx*cameraoffsetdyn;
+				view.ty = player.ty + dy*cameraoffsetdyn - 140;
+				view.tz = player.tz + dz*cameraoffsetdyn;
+			}
+			
+			if (player.activeanimation)
+			{
+				var animation = player.animations.getItem(player.activeanimation);
+				
+				krpano.get("layer[infos]").text = 
+					"Animation: " + player.activeanimation + 
+					"[br]" + "Time: " + animation.time.toFixed(2) + 
+					"[br]" + "Duration: " + animation.duration.toFixed(2) + 
+					"[br]" + "Timescale: " + animation.timescale.toFixed(2) + 
+					"[br]" + "Weight: " + animation.weight.toFixed(2) +
+					"";
+			}
+		});
+	
+	]]></action>
+	
+	
+	<!-- drag area for touch devices -->
+	<layer name="walkinfo_touch" keep="true" type="container" align="rightbottom"
+		x="40" y="80"
+		bgalpha="0.3" xdevices="handheld"
+		css="color:#FFFFFF;text-align:center;" txtshadow="0 1 4 0x000000 1.0"
+		bgcolor="0xFFFFFF"
+		bgshadow="0 0 0 1 0xFFFFFF 0.5"
+		vcenter="true"
+		width="110" height="110" bgroundedge="180" bgblur="2"
+		xondown="dragcontrol();"
+		/>
+	
+	<layer name="walkinfo_joypad" keep="true" type="container"
+		parent="walkinfo_touch"
+		bgalpha="0.5"
+		bgcolor="0xFFFFFF"
+		bgcapture="true"
+		bgborder="1 0xFFFFFF 0.5"
+		bgshadow="5 10 50 0 0x000000 0.5"
+		align="center" width="80" height="80" bgroundedge="180"
+		ondown="dragcontrol();"
+		/>
+	
+	<action name="dragcontrol" scope="local" type="js"><![CDATA[
+		
+		krpano.tween(caller.parentobject, {alpha:0.4});
+		
+		var padsize = caller.parentobject.pixelwidth;
+		var sticksize = caller.pixelwidth;
+		var stickrange = (padsize - sticksize) * 0.5 * 1.4;
+		
+		krpano.actions.asyncloop( function()
+		{
+			if (caller.pressed)
+			{
+				var dx = (krpano.mouse.x - krpano.mouse.downx);
+				var dy = (krpano.mouse.y - krpano.mouse.downy);
+				
+				var dl = Math.sqrt(dx*dx + dy*dy);
+				if (dl > 0)
+				{
+					dx /= dl;
+					dy /= dl;
+					dl = Math.min(dl,padsize) / padsize;
+					dx *= dl;
+					dy *= dl;
+				}
+				
+				caller.ox = stickrange * dx;
+				caller.oy = stickrange * dy;
+				
+				krpano.walkaround.forward  = Math.max(-dy,0);
+				krpano.walkaround.backward = Math.max(dy,0);
+				krpano.walkaround.left     = Math.max(-dx,0);
+				krpano.walkaround.right    = Math.max(dx,0);
+				krpano.walkaround.faster   = dl > 0.7;
+				
+				return true;	// keep looping
+			}
+			else
+			{
+				krpano.walkaround.forward = 0;
+				krpano.walkaround.backward = 0;
+				krpano.walkaround.left = 0;
+				krpano.walkaround.right = 0;
+				krpano.walkaround.faster = 0;
+				
+				krpano.tween(caller.parentobject, {alpha:1.0});
+				krpano.tween(caller, {ox:0,oy:0}, 0.1);
+				
+				return false;	// stop the loop
+			}
+		});
+	]]></action>
+	
+</krpano>
