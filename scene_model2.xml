@@ -1,4 +1,3 @@
-```xml
 <krpano version="1.24" title="3XyzMedia RGB Bridge - Gaussian Viewer v4.14">
     <image>
         <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/micro.ply"
@@ -24,4 +23,3 @@
             speedvariance="2.0"
             wind="0.0"/>
 </krpano>
-```
