@@ -1,3 +1,4 @@
+```xml
 <krpano version="1.20">
     <include url="plugins/splats.js" />
     
@@ -5,7 +6,7 @@
         <view hlookat="0" vlookat="0" fov="90" />
 
         <splats
-           url="https://drive.google.com/uc?export=download&amp;id=1sgY1--0OfsZR5taMo8PBhL3ynfWfe2_u&amp;confirm=t"
+           url="https://github.com/3XyzMedia/VIEWER/releases/download/v1.0/zvon.ply"
            scale="1.0"
            position="0 0 0"
            rotation="0 0 0"
@@ -20,3 +21,4 @@
 
     <render webgl="true" css3d="false" />
 </krpano>
+```
