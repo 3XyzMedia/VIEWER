@@ -1,7 +1,7 @@
 <krpano version="1.24" title="3XyzMedia RGB Bridge - Gaussian Viewer v4.14">
     <image>
         <splats
-            url="https://github.com/3XyzMedia/VIEWER/releases/download/v1.0/zvon.ply"
+            url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/micro.ply"
             scale="1.0"
             tx="0" ty="0" tz="0"
             rx="0" ry="0" rz="180"
