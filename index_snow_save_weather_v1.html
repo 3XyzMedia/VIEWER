@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3XyzMedia RGB Bridge&#8482;</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;font-family:Arial,sans-serif}
+#pano{position:absolute;inset:0}
+/* Screen-space snow: independent from krpano camera/model transforms. */
+#snowOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:5;pointer-events:none;display:none}
+#surface{position:absolute;inset:0;z-index:10;cursor:grab;touch-action:none; -webkit-user-select:none;user-select:none}
+#surface.dragging{cursor:grabbing}
+#toolbar{position:fixed;left:16px;top:16px;z-index:50;display:flex;gap:6px;padding:6px;border-radius:12px;background:rgba(5,8,14,.72);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12)}
+.tool{min-width:42px;height:36px;border:0;border-radius:9px;cursor:pointer;background:rgba(255,255,255,.10);color:#fff;font-size:14px;font-weight:800}
+.tool.play{min-width:64px;font-size:12px}
+.tool.active{background:#fff;color:#0b0f16}
+#brand{position:fixed;left:16px;top:68px;z-index:45;color:#fff;background:rgba(5,8,14,.58);backdrop-filter:blur(8px);padding:7px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.10);font-weight:700;letter-spacing:.25px;pointer-events:none;max-width:380px}
+#subtitle{display:block;font-size:11px;font-weight:400;opacity:.7;margin-top:2px;line-height:1.3}
+#contact{display:block;font-size:11px;font-weight:400;color:#888888;margin-top:4px;line-height:1.3;white-space:nowrap}
+#help{position:fixed;left:16px;bottom:16px;z-index:30;color:#e9eef7;background:rgba(5,8,14,.60);backdrop-filter:blur(8px);padding:8px 11px;border-radius:10px;font-size:11px;pointer-events:none;line-height:1.45}
+#panelToggle{position:fixed;right:16px;top:16px;z-index:61;width:40px;height:38px;border:0;border-radius:11px;cursor:pointer;background:rgba(5,8,14,.82);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:17px}
+#panel{position:fixed;right:16px;top:60px;bottom:16px;z-index:60;width:315px;overflow:hidden;border-radius:14px;background:rgba(5,8,14,.90);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);color:#fff;box-shadow:0 10px 34px rgba(0,0,0,.32);transition:transform .22s ease,opacity .22s ease}
+#panel.collapsed{transform:translateX(calc(100% + 18px));opacity:0;pointer-events:none}
+#panelInner{height:100%;overflow:auto;padding:13px 14px;box-sizing:border-box}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.label{font-size:12px;font-weight:700}.val{font-size:12px;opacity:.78;min-width:92px;text-align:right}
+input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
+.weather-select{width:100%;box-sizing:border-box;margin:7px 0 10px;padding:9px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:#111722;color:#fff;font-size:12px}
+.small{font-size:10px;opacity:.54;margin-top:-6px;margin-bottom:8px;line-height:1.35}.section{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
+.buttons{display:flex;gap:7px;flex-wrap:wrap}button.action{border:0;border-radius:9px;padding:8px 10px;cursor:pointer;background:rgba(255,255,255,.11);color:#fff;border:1px solid rgba(255,255,255,.10);font-size:11px;font-weight:700}button.action.primary{background:#fff;color:#0b0f16}
+#distanceControl{display:flex;align-items:center;gap:8px}#distanceControl input[type=range]{flex:1;min-width:0;width:auto;margin:7px 0 12px}#distLock{flex:0 0 auto;min-width:38px;padding:7px 9px}#distLock.locked{background:#fff;color:#0b0f16}input[type=range]:disabled{opacity:.42;cursor:not-allowed}
+#shareUrl{width:100%;box-sizing:border-box;margin-top:8px;padding:8px 9px;border-radius:9px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:#dfe8f7;font:10px Consolas,monospace}
+#shareLink{display:block;margin-top:7px;color:#dfe8f7;font-size:10px;text-decoration:none;opacity:.82}#shareLink:hover{text-decoration:underline;opacity:1}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);z-index:90;padding:9px 13px;border-radius:10px;background:rgba(5,8,14,.88);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}#toast.show{opacity:1;transform:translate(-50%,0)}
+#axesCanvas{position:fixed;right:28px;bottom:88px;width:132px;height:132px;z-index:55;pointer-events:none;display:block;filter:drop-shadow(0 8px 18px rgba(0,0,0,.28));transition:right .22s ease}#axesCanvas.shifted{right:352px}
+
+#fps{position:fixed;right:18px;bottom:16px;z-index:40;color:rgba(255,255,255,.45);font:10px Consolas,monospace;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="pano"></div><canvas id="snowOverlay" aria-hidden="true"></canvas><div id="surface"></div><canvas id="axesCanvas" width="132" height="132"></canvas>
+<div id="toolbar"><button class="tool" id="toolAxes" title="Показать / скрыть WORLD XYZ">XYZ</button><button class="tool play" id="toolPlay" title="Плавный круг камеры вокруг pivot">&#9654; PLAY</button><button class="tool" id="toolHome" title="Сброс камеры вокруг текущего pivot">&#8962;</button><button class="tool" id="toolReset" title="Полный сброс">&#8634;</button></div>
+<div id="brand">3XyzMedia RGB Bridge&#8482;<span id="subtitle">Каждый объект начинается с цвета&#8230;</span><span id="contact">Contact: &#128231; xyzmedia3@yandex.ru</span></div>
+<div id="help">1 палец / ЛКМ &#8212; вращение<br>2 пальца &#8212; zoom + перемещение &#183; колесо &#8212; zoom<br>ПКМ/MMB &#8212; pan &#183; Shift+ЛКМ &#8212; roll<br>PLAY &#8212; плавный круг &#183; HOME &#8212; сброс</div>
+<button id="panelToggle" title="Настройки">&#9881;</button>
+<div id="panel" class="collapsed"><div id="panelInner">
+  <div class="row"><span class="label">Camera distance</span><span class="val" id="distValue">1.00&times;</span></div>
+  <div id="distanceControl"><input id="dist" type="range" min="0" max="1000" step="1" value="570"><button class="action" id="distLock" type="button" title="Зафиксировать дистанцию" aria-pressed="false">&#128275;</button></div><div class="small">Дистанция: влево — дальше, вправо — ближе. Замок фиксирует дистанцию и отключает zoom.</div>
+  <div class="row"><span class="label">Splat size</span><span class="val" id="scaleValue">0.25&times;</span></div><input id="scale" type="range" min="0.01" max="1.00" step="0.01" value="0.25">
+  <div class="row"><span class="label">Screen minimum</span><span class="val" id="aaValue">0.30 px</span></div><input id="aa" type="range" min="0.00" max="2.00" step="0.05" value="0.30">
+  
+  <div class="section"><div class="row"><span class="label">PLAY speed</span><span class="val" id="speedValue">3.0&deg;/s</span></div><input id="speed" type="range" min="0.5" max="12" step="0.5" value="3">
+  <div class="small">PLAY вращает камеру вокруг pivot. Модель не перекручивается.</div></div>
+  <div class="section"><div class="row"><span class="label">World axes</span><span class="val" id="axesValue">ON</span></div><div class="buttons"><button class="action primary" id="axesToggle2">XYZ: ON</button></div><div class="small">Гизмо показывает мировые X/Y/Z (Z к зрителю).</div></div>
+<div class="section"><div class="row"><span class="label">Up axis (к зрителю)</span><span class="val" id="upAxisValue">Z (AutoCAD)</span></div><div class="buttons"><button class="action primary" id="upZ" title="AutoCAD: Z к зрителю">Z&#8593;</button><button class="action" id="upMinusZ" title="-Z к зрителю">-Z&#8593;</button><button class="action" id="upY" title="Y к зрителю">Y&#8593;</button><button class="action" id="upMinusY" title="-Y к зрителю">-Y&#8593;</button><button class="action" id="upX" title="X к зрителю">X&#8593;</button><button class="action" id="upMinusX" title="-X к зрителю">-X&#8593;</button></div><div class="small">Выберите ось, направленную к зрителю (&#8593;). Применяется сразу, вращение продолжается.</div></div>
+  <div class="section"><div class="buttons"><button class="action" id="sort">SORT: DISTANCE</button><button class="action" id="mode">MODE: PERSPECTIVE</button><button class="action" id="reset2">HOME</button></div></div>
+  <div class="section" id="weatherSection">
+    <div class="row"><span class="label">Погода</span><span class="val">экранный эффект</span></div>
+    <select id="weatherMode" class="weather-select" aria-label="Выбрать погоду">
+      <option value="off">Выключено</option>
+      <option value="snow">Снег</option>
+      <option value="rain">Дождь</option>
+      <option value="heavy">Сильный дождь</option>
+    </select>
+    <div class="row"><span class="label">Интенсивность</span><span class="val" id="weatherIntensityValue">50%</span></div>
+    <input id="weatherIntensity" type="range" min="10" max="100" step="5" value="50">
+    <div class="row"><span class="label">Скорость</span><span class="val" id="weatherSpeedValue">1.00×</span></div>
+    <input id="weatherSpeed" type="range" min="0.5" max="3" step="0.25" value="1">
+    <div class="small">Эффект поверх экрана; координаты модели не меняются.</div>
+  </div>
+
+  <div class="section"><div class="buttons"><button class="action primary" id="saveView">&#128190; Сохранить вид</button><button class="action" id="loadView">&#8599; Открыть сохранённый</button><button class="action" id="copyLink">&#128279; Копировать ссылку</button><button class="action" id="clearView">&times; Удалить</button></div>
+  <input id="shareUrl" readonly value="" aria-label="Ссылка для шаринга"><a id="shareLink" href="#" target="_blank" rel="noopener">Открыть эту ссылку</a><div class="small">Ссылка сохраняет выбранную модель, ракурс, дистанцию, ось, видимость XYZ, Gaussian-настройки, скорость и состояние PLAY.</div></div>
+</div></div>
+<div id="toast"></div><div id="fps">FPS &#8212;</div>
+<script src="krpano.js"></script>
+<script>
+let k=null;
+
+// Сцена выбирается из ссылки.
+// Основной параметр — xml. Для совместимости принимаем и старый параметр scene.
+// Ссылки без обоих параметров по-прежнему открывают scene.xml.
+const initialParams = new URLSearchParams(location.search);
+const sceneXml = initialParams.get('xml') || initialParams.get('scene') || 'scene.xml';
+
+// Screen-space weather: independent from krpano camera/model transforms.
+const snowCanvas = document.getElementById('snowOverlay');
+const snowCtx = snowCanvas.getContext('2d', { alpha: true });
+let weatherMode = 'snow', weatherIntensity = 50, weatherSpeed = 1;
+let snowW = 0, snowH = 0, snowDpr = 1, snowParticles = [], snowFrame = 0, snowLastTime = 0;
+
+function resizeSnowOverlay(){
+  snowDpr = Math.min(window.devicePixelRatio || 1, 2);
+  snowW = window.innerWidth; snowH = window.innerHeight;
+  snowCanvas.width = Math.round(snowW * snowDpr);
+  snowCanvas.height = Math.round(snowH * snowDpr);
+  snowCanvas.style.width = snowW + 'px';
+  snowCanvas.style.height = snowH + 'px';
+  snowCtx.setTransform(snowDpr, 0, 0, snowDpr, 0, 0);
+}
+function makeWeatherParticle(randomY = false){
+  const depth = 0.25 + Math.random() * 0.75;
+  return {
+    x: Math.random() * Math.max(1, snowW),
+    y: randomY ? Math.random() * Math.max(1, snowH) : -10 - Math.random() * 35,
+    r: 0.45 + depth * 1.65,
+    vy: (0.45 + depth * 1.65) * weatherSpeed,
+    vx: (Math.random() - 0.5) * 0.55,
+    drift: Math.random() * Math.PI * 2,
+    driftSpeed: 0.35 + Math.random() * 0.9,
+    alpha: 0.22 + depth * 0.63,
+    depth,
+    length: 7 + depth * 17
+  };
+}
+function drawScreenWeather(now){
+  if(weatherMode === 'off') return;
+  const dtSeconds = snowLastTime ? Math.min(0.05, Math.max(0, (now - snowLastTime) / 1000)) : 1/60;
+  const dt = dtSeconds * 60;
+  snowLastTime = now;
+  snowCtx.clearRect(0, 0, snowW, snowH);
+  for(const p of snowParticles){
+    p.y += p.vy * dt;
+    if(weatherMode === 'snow'){
+      p.drift += 0.012 * p.driftSpeed * dt;
+      p.x += (p.vx + Math.sin(p.drift) * 0.38) * dt;
+    } else {
+      p.x += (p.vx * 0.45 + 1.15) * dt * weatherSpeed;
+    }
+    if(p.y > snowH + 30){ Object.assign(p, makeWeatherParticle(false)); p.y = -10; }
+    if(p.x < -25) p.x = snowW + 10;
+    else if(p.x > snowW + 25) p.x = -10;
+    snowCtx.globalAlpha = p.alpha;
+    if(weatherMode === 'snow'){
+      snowCtx.fillStyle = '#ffffff';
+      snowCtx.beginPath();
+      snowCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      snowCtx.fill();
+    } else {
+      snowCtx.strokeStyle = 'rgba(190,220,255,0.9)';
+      snowCtx.lineWidth = weatherMode === 'heavy' ? 1.35 : 0.9;
+      snowCtx.beginPath();
+      snowCtx.moveTo(p.x, p.y);
+      snowCtx.lineTo(p.x - (weatherMode === 'heavy' ? 4 : 2.5), p.y + p.length);
+      snowCtx.stroke();
+    }
+  }
+  snowCtx.globalAlpha = 1;
+  snowFrame = requestAnimationFrame(drawScreenWeather);
+}
+function applyWeather(mode, intensity, speed){
+  weatherMode = ['off','snow','rain','heavy'].includes(mode) ? mode : 'snow';
+  weatherIntensity = Math.max(10, Math.min(100, Number(intensity) || 50));
+  weatherSpeed = Math.max(0.5, Math.min(3, Number(speed) || 1));
+  const modeEl = document.getElementById('weatherMode');
+  const intensityEl = document.getElementById('weatherIntensity');
+  const speedEl = document.getElementById('weatherSpeed');
+  if(modeEl) modeEl.value = weatherMode;
+  if(intensityEl) intensityEl.value = String(weatherIntensity);
+  if(speedEl) speedEl.value = String(weatherSpeed);
+  if(snowFrame) cancelAnimationFrame(snowFrame);
+  snowFrame = 0;
+  if(weatherMode === 'off'){
+    snowCanvas.style.display = 'none';
+    snowCtx.clearRect(0, 0, snowW, snowH);
+    return;
+  }
+  resizeSnowOverlay();
+  snowCanvas.style.display = 'block';
+  const base = Math.min(window.innerWidth < 700 ? 500 : 850, Math.max(180, Math.floor(snowW * snowH / 1600)));
+  const count = Math.max(60, Math.floor(base * weatherIntensity / 50));
+  snowParticles = Array.from({length: count}, () => makeWeatherParticle(true));
+  snowLastTime = 0;
+  snowFrame = requestAnimationFrame(drawScreenWeather);
+}
+function startScreenWeather(){ applyWeather(weatherMode, weatherIntensity, weatherSpeed); }
+
+const BASE_DISTANCE=200;
+let pivot={x:0,y:0,z:0};
+let yaw=0, pitch=0, roll=0, distance=BASE_DISTANCE;
+let distanceLocked=false, sharedStartState=null;
+let pan={x:0,y:0,z:0};
+let dragging=false, dragMode=null, startX=0,startY=0,startYaw=0,startPitch=0,startRoll=0,startPan={x:0,y:0,z:0},startRollAngle=0;
+let playOn=false,playAnim=0,playLast=0,playSpeedDeg=3,playAngle=0;
+let axesOn=true, sortIndex=0, perspective=true;
+let upAxis='Z';
+const upAxisRotations={'Z':{rx:0,ry:0,rz:180},'-Z':{rx:180,ry:0,rz:180},'Y':{rx:-90,ry:0,rz:0},'-Y':{rx:90,ry:0,rz:0},'X':{rx:0,ry:90,rz:0},'-X':{rx:0,ry:-90,rz:0}};
+const upAxisGizmo={'Z':{X:{x:1,y:0,z:0},Y:{x:0,y:1,z:0},Z:{x:0,y:0,z:1}},'-Z':{X:{x:1,y:0,z:0},Y:{x:0,y:-1,z:0},Z:{x:0,y:0,z:-1}},'Y':{X:{x:1,y:0,z:0},Y:{x:0,y:0,z:1},Z:{x:0,y:1,z:0}},'-Y':{X:{x:1,y:0,z:0},Y:{x:0,y:0,z:-1},Z:{x:0,y:-1,z:0}},'X':{X:{x:0,y:0,z:-1},Y:{x:0,y:1,z:0},Z:{x:1,y:0,z:0}},'-X':{X:{x:0,y:0,z:1},Y:{x:0,y:1,z:0},Z:{x:-1,y:0,z:0}}};
+function setUpAxis(axis){upAxis=axis;const rot=upAxisRotations[axis];if(k){k.set('image.splats.rx',rot.rx);k.set('image.splats.ry',rot.ry);k.set('image.splats.rz',rot.rz);k.call('view.update();display.splats.update();')}var displayText=axis==='Z'?'Z (AutoCAD)':axis+'\u2191';document.getElementById('upAxisValue').textContent=displayText;['upZ','upMinusZ','upY','upMinusY','upX','upMinusX'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('primary')});var btnId='up'+axis.replace('-','Minus');var btn=document.getElementById(btnId);if(btn)btn.classList.add('primary');stopPlay();playAngle=0;pan={x:0,y:0,z:0};yaw=0;pitch=0;roll=0;distEl.value=multiplierToSlider(distance/BASE_DISTANCE);applyDistance();showToast('Up axis: '+axis+'\u2191 \u2014 PLAY \u043a\u0440\u0443\u0442\u0438\u0442 \u0432\u043e\u043a\u0440\u0443\u0433 '+axis+' \u2713')}
+const surface=document.getElementById('surface'), axesCanvas=document.getElementById('axesCanvas'), ctx=axesCanvas.getContext('2d');
+const distEl=document.getElementById('dist'),scaleEl=document.getElementById('scale'),aaEl=document.getElementById('aa'),speedEl=document.getElementById('speed');
+const shareLinkEl=document.getElementById('shareLink');
+const sortModes=[['distance','SORT: DISTANCE'],['depth','SORT: DEPTH'],['accurate','SORT: ACCURATE'],['off','SORT: OFF']];
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function rad(d){return d*Math.PI/180} function deg(r){return r*180/Math.PI}
+function norm(v){const l=Math.hypot(v.x,v.y,v.z)||1;return{x:v.x/l,y:v.y/l,z:v.z/l}}
+function dot(a,b){return a.x*b.x+a.y*b.y+a.z*b.z}
+function cross(a,b){return{x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x}}
+function wrap360(v){v%=360;if(v<0)v+=360;return v}
+function sliderToMultiplier(v){const a=Math.log10(.005),b=Math.log10(100000);return Math.pow(10,a+((1000-v)/1000)*(b-a))}
+function multiplierToSlider(m){const a=Math.log10(.005),b=Math.log10(100000);return clamp(1000-((Math.log10(Math.max(.005,Math.min(100000,m)))-a)/(b-a))*1000,0,1000)}
+function cameraState(){
+  const sy=Math.sin(rad(yaw)), cy=Math.cos(rad(yaw)), cp=Math.cos(rad(pitch)), sp=Math.sin(rad(pitch));
+  const off={x:sy*cp*distance,y:sp*distance,z:cy*cp*distance};
+  const target={x:pivot.x+pan.x,y:pivot.y+pan.y,z:pivot.z+pan.z};
+  const cam={x:target.x+off.x,y:target.y+off.y,z:target.z+off.z};
+  const f=norm({x:target.x-cam.x,y:target.y-cam.y,z:target.z-cam.z});
+  let right=cross(f,{x:0,y:1,z:0});
+  if(Math.hypot(right.x,right.y,right.z)<1e-6){const s=Math.cos(rad(pitch))>=0?1:-1;right={x:s*Math.cos(rad(yaw)),y:0,z:-s*Math.sin(rad(yaw))}}
+  right=norm(right); const up=norm(cross(right,f));
+  const rr=rad(roll),cr=Math.cos(rr),sr=Math.sin(rr);
+  const rightR={x:right.x*cr+up.x*sr,y:right.y*cr+up.y*sr,z:right.z*cr+up.z*sr};
+  const upR={x:up.x*cr-right.x*sr,y:up.y*cr-right.y*sr,z:up.z*cr-right.z*sr};
+  return {target,cam,f,right:rightR,up:upR};
+}
+function updateView(){
+  if(!k)return; pitch=clamp(pitch,-179,179); yaw=wrap360(yaw);
+  const c=cameraState();
+  const h=deg(Math.atan2(c.f.x,c.f.z)),v=deg(Math.atan2(c.f.y,Math.hypot(c.f.x,c.f.z)));
+  k.set('view.tx',c.cam.x); k.set('view.ty',c.cam.y); k.set('view.tz',c.cam.z);
+  k.set('view.hlookat',h); k.set('view.vlookat',v); k.set('view.roll',roll); k.set('view.fov',70); k.call('view.update();');
+  drawAxes();
+}
+function applyDistance(){const m=sliderToMultiplier(Number(distEl.value));distance=BASE_DISTANCE*m;document.getElementById('distValue').textContent=(m<1?m.toFixed(4):m.toFixed(2))+'\u00d7';updateView()}
+function applyScale(){const v=Number(scaleEl.value);document.getElementById('scaleValue').textContent=v.toFixed(2)+'\u00d7';if(k)k.set('display.splats.scale',v)}
+function applyAA(){const v=Number(aaEl.value);document.getElementById('aaValue').textContent=v.toFixed(2)+' px';if(k)k.set('image.splats.antialias',v)}
+function applySort(){if(!k)return;const s=sortModes[sortIndex];k.set('display.splats.sortmode',s[0]);document.getElementById('sort').textContent=s[1]}
+function applyMode(){if(!k)return;k.set('display.splats.rendermode',perspective?'perspective':'standard');document.getElementById('mode').textContent=perspective?'MODE: PERSPECTIVE':'MODE: STANDARD'}
+function syncAxisUI(){
+  const label=upAxis==='Z'?'Z (AutoCAD)':upAxis+'↑';
+  document.getElementById('upAxisValue').textContent=label;
+  ['upZ','upMinusZ','upY','upMinusY','upX','upMinusX'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('primary')});
+  const btn=document.getElementById('up'+upAxis.replace('-','Minus'));if(btn)btn.classList.add('primary');
+}
+function applyAxisRotation(){const rot=upAxisRotations[upAxis]||upAxisRotations.Z;if(k){k.set('image.splats.rx',rot.rx);k.set('image.splats.ry',rot.ry);k.set('image.splats.rz',rot.rz);k.call('view.update();display.splats.update();')}}
+function toggleAxes(){axesOn=!axesOn;axesCanvas.style.display=axesOn?'block':'none';document.getElementById('toolAxes').classList.toggle('active',axesOn);document.getElementById('axesToggle2').textContent='XYZ: '+(axesOn?'ON':'OFF');document.getElementById('axesToggle2').classList.toggle('primary',axesOn);document.getElementById('axesValue').textContent=axesOn?'ON':'OFF';drawAxes()}
+function drawAxes(){if(!axesOn||!k)return; const c=cameraState(),w=132,h=132,cx=w/2,cy=h/2,L=40; ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='rgba(5,8,14,.64)';ctx.beginPath();ctx.arc(cx,cy,49,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.14)';ctx.stroke();
+  const g=upAxisGizmo[upAxis]||upAxisGizmo['Z'];const list=[['X',g.X,'#ff4747'],['Y',g.Y,'#55e477'],['Z',g.Z,'#4aa3ff']];
+  for(const [name,d,col] of list){const sx=dot(d,c.right), sy=-dot(d,c.up), ex=cx+sx*L, ey=cy+sy*L;ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);ctx.stroke();ctx.fillStyle=col;ctx.beginPath();ctx.arc(ex,ey,4,0,Math.PI*2);ctx.fill();ctx.font='bold 14px Arial';ctx.fillText(name,ex+6,ey+5)}
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.66)';ctx.font='9px Arial';ctx.fillText('WORLD',7,122);ctx.fillText('PIVOT',50,122);
+}
+function stopPlay(){if(playOn){playOn=false;cancelAnimationFrame(playAnim);document.getElementById('toolPlay').textContent='\u25b6 PLAY'}}
+function startPlay(){if(playOn)return;playOn=true;playLast=performance.now();document.getElementById('toolPlay').textContent='\u25a0 STOP';function tick(now){if(!playOn)return;const dt=Math.min(.05,(now-playLast)/1000);playLast=now;if(upAxis==='Z'||upAxis==='-Z'){playAngle+=playSpeedDeg*dt;const base=upAxisRotations[upAxis];k.set('image.splats.rz',base.rz+playAngle);k.call('display.splats.update();')}else if(upAxis==='X'||upAxis==='-X'){pitch=clamp(pitch+playSpeedDeg*dt,-179,179);updateView()}else{yaw=wrap360(yaw+playSpeedDeg*dt);updateView()}playAnim=requestAnimationFrame(tick)}playAnim=requestAnimationFrame(tick)}
+function screenRollAngle(x,y){const r=surface.getBoundingClientRect();return Math.atan2(y-(r.top+r.height/2),x-(r.left+r.width/2))}
+async function loadPivotFile(){try{const r=await fetch('model/pivot.json',{cache:'no-store'});if(r.ok){const j=await r.json();if([j.x,j.y,j.z].every(Number.isFinite))pivot={x:Number(j.x),y:Number(j.y),z:Number(j.z)}}}catch(e){} updatePivotUI()}
+function updatePivotUI(){var el=document.getElementById('pivotValue');if(!el)return;el.textContent=pivot.x.toFixed(2)+', '+pivot.y.toFixed(2)+', '+pivot.z.toFixed(2)}
+function setPivot(x,y,z){pivot={x:Number(x),y:Number(y),z:Number(z)};pan={x:0,y:0,z:0};updatePivotUI();updateView();if(k)k.set('control.locked','true');showToast('Pivot \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d \u2713')}
+function setPivotFromCursor(){return false}
+function resetCamera(){stopPlay();playAngle=0;if(sharedStartState){applyState(JSON.parse(JSON.stringify(sharedStartState)));const base=upAxisRotations[upAxis];if(k){k.set('image.splats.rx',base.rx);k.set('image.splats.ry',base.ry);k.set('image.splats.rz',base.rz);k.call('display.splats.update();');k.set('control.locked','true')}showToast('Исходный вид ссылки восстановлен ✓');return}pan={x:0,y:0,z:0};yaw=0;pitch=0;roll=0;distance=BASE_DISTANCE;distEl.value=570;const base=upAxisRotations[upAxis];if(k){k.set('image.splats.rx',base.rx);k.set('image.splats.ry',base.ry);k.set('image.splats.rz',base.rz);k.call('display.splats.update();');k.set('control.locked','true')}applyDistance();showToast('HOME ✓')}
+function resetAll(){
+  stopPlay();playAngle=0;
+  // Owner's browser remembers the factory view. A recipient without that local
+  // baseline returns to the exact view encoded in the shared URL instead.
+  let factory=null;try{const raw=localStorage.getItem('3XyzMedia_factory_view_v1');if(raw)factory=JSON.parse(raw)}catch(e){}
+  if(factory){setUpAxis('Z');applyState(factory);const base=upAxisRotations['Z'];if(k){k.set('image.splats.rx',base.rx);k.set('image.splats.ry',base.ry);k.set('image.splats.rz',base.rz);k.call('display.splats.update();');k.set('control.locked','true')}showShareUrl('');showToast('Первоначальный вид восстановлен ✓');return}
+  if(sharedStartState){applyState(JSON.parse(JSON.stringify(sharedStartState)));const base=upAxisRotations[upAxis];if(k){k.set('image.splats.rx',base.rx);k.set('image.splats.ry',base.ry);k.set('image.splats.rz',base.rz);k.call('display.splats.update();');k.set('control.locked','true')}showToast('Исходный вид ссылки восстановлен ✓');return}
+  setUpAxis('Z');pivot={x:0,y:0,z:0};updatePivotUI();yaw=0;pitch=0;roll=0;pan={x:0,y:0,z:0};distance=BASE_DISTANCE;distEl.value=multiplierToSlider(1);scaleEl.value=.25;aaEl.value=.30;sortIndex=0;perspective=true;applyDistance();applyScale();applyAA();applySort();applyMode();showShareUrl('');
+}
+function state(){return {p:[pivot.x,pivot.y,pivot.z],o:[yaw,pitch,roll],d:distance,m:[pan.x,pan.y,pan.z],s:Number(scaleEl.value),a:Number(aaEl.value),q:sortIndex,r:perspective?1:0,u:upAxis,x:axesOn?1:0,b:playOn?1:0,w:playSpeedDeg,l:distanceLocked?1:0,wx:weatherMode,wi:weatherIntensity,ws:weatherSpeed}}
+// v2 stores the complete viewer state as URL-safe JSON. The legacy binary v1
+// decoder remains below so previously shared links continue to open.
+function encodeState(st){return 'j'+btoa(JSON.stringify(st)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function decodeState(token){try{
+  if(token.startsWith('j')){let t=token.slice(1).replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';const st=JSON.parse(atob(t));if(!st||!Array.isArray(st.p)||!Array.isArray(st.o)||!Array.isArray(st.m))return null;return st}
+  token=token.replace(/-/g,'+').replace(/_/g,'/');while(token.length%4)token+='=';const b=atob(token),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const dv=new DataView(u.buffer);if(dv.getUint8(0)!==1||u.length<45)return null;let off=1,a=[];for(let i=0;i<10;i++){a.push(dv.getFloat32(off,true));off+=4}return {p:a.slice(0,3),o:a.slice(3,6),d:a[6],m:a.slice(7,10),s:u[41],a:u[42],q:u[43],r:u[44],u:'Z',x:1,b:0,w:3,l:0}
+}catch(e){return null}}
+
+function currentShareUrl(){
+  const url = new URL(location.href);
+
+  // Сохраняем выбранную модель именно в параметре xml,
+  // который использует embedpano при загрузке сцены.
+  // Старый параметр scene удаляем, чтобы он не расходился с xml.
+  url.searchParams.set('xml', sceneXml);
+  url.searchParams.delete('scene');
+  url.searchParams.set('v', encodeState(state()));
+
+  return url.toString();
+}
+function showShareUrl(url){document.getElementById('shareUrl').value=url;shareLinkEl.href=url;shareLinkEl.textContent=url?'\u2197 \u041e\u0442\u043a\u0440\u044b\u0442\u044c \u044d\u0442\u0443 \u0441\u0441\u044b\u043b\u043a\u0443':'\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u044d\u0442\u0443 \u0441\u0441\u044b\u043b\u043a\u0443'}
+async function copyText(t){try{await navigator.clipboard.writeText(t)}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}}
+function copyLink(){const st=state();sharedStartState=JSON.parse(JSON.stringify(st));const url=currentShareUrl();history.replaceState(null,'',url);showShareUrl(url);copyText(url).then(()=>showToast('\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043a\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0430 \u2713'))}
+function applyState(st){if(!st)return;
+  stopPlay();playAngle=0;
+  if(st.u&&upAxisRotations[st.u])upAxis=st.u;
+  pivot={x:Number(st.p[0])||0,y:Number(st.p[1])||0,z:Number(st.p[2])||0};yaw=Number(st.o[0])||0;pitch=Number(st.o[1])||0;roll=Number(st.o[2])||0;distance=Number(st.d)||BASE_DISTANCE;pan={x:Number(st.m[0])||0,y:Number(st.m[1])||0,z:Number(st.m[2])||0};
+  /* Accept both live state values and compact URL-decoded integer values. */
+  scaleEl.value=clamp(st.s>1?st.s/100:st.s,.01,1);aaEl.value=clamp(st.a>2?st.a/20:st.a,0,2);sortIndex=clamp(st.q|0,0,3);perspective=!!st.r;
+  axesOn=st.x===undefined?true:!!st.x;playSpeedDeg=clamp(Number(st.w)||3,.5,12);distanceLocked=!!st.l;
+  const lock=document.getElementById('distLock');distEl.disabled=distanceLocked;lock.classList.toggle('locked',distanceLocked);lock.innerHTML=distanceLocked?'&#128274;':'&#128275;';lock.setAttribute('aria-pressed',String(distanceLocked));
+  axesCanvas.style.display=axesOn?'block':'none';document.getElementById('toolAxes').classList.toggle('active',axesOn);document.getElementById('axesToggle2').textContent='XYZ: '+(axesOn?'ON':'OFF');document.getElementById('axesToggle2').classList.toggle('primary',axesOn);document.getElementById('axesValue').textContent=axesOn?'ON':'OFF';
+  speedEl.value=String(playSpeedDeg);document.getElementById('speedValue').textContent=playSpeedDeg.toFixed(1)+'°/s';syncAxisUI();applyAxisRotation();distEl.value=multiplierToSlider(distance/BASE_DISTANCE);updatePivotUI();applyDistance();applyScale();applyAA();applySort();applyMode();
+  applyWeather(st.wx || 'snow', st.wi === undefined ? 50 : st.wi, st.ws === undefined ? 1 : st.ws);
+  if(st.b)startPlay();
+}
+function loadURLState(){const t=new URLSearchParams(location.search).get('v');if(!t)return false;const st=decodeState(t);if(st){applyState(st);return true}return false}
+function saveView(){const st=state();localStorage.setItem('3XyzMedia_single_view_v3',JSON.stringify(st));showShareUrl(currentShareUrl());showToast('\u0412\u0438\u0434 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d \u2713')}
+function loadView(){const raw=localStorage.getItem('3XyzMedia_single_view_v3');if(!raw){showToast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043d\u043e\u0433\u043e \u0432\u0438\u0434\u0430 \u043d\u0435\u0442');return}try{applyState(JSON.parse(raw));showShareUrl(currentShareUrl());showToast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043d\u044b\u0439 \u0432\u0438\u0434 \u043e\u0442\u043a\u0440\u044b\u0442 \u2713')}catch(e){showToast('\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043d\u044b\u0439 \u0432\u0438\u0434')}}
+function showToast(s){const t=document.getElementById('toast');t.textContent=s;t.classList.add('show');clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('show'),1400)}
+
+surface.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation()});
+// Pointer/touch controls: one finger rotates; two fingers pinch-zoom and pan.
+const activePointers = new Map();
+let gesture = null;
+function pointerPoint(ev){ return {x:ev.clientX,y:ev.clientY}; }
+function getTwoPointerMetrics(){
+  const pts=[...activePointers.values()];
+  if(pts.length<2)return null;
+  const a=pts[0],b=pts[1],dx=b.x-a.x,dy=b.y-a.y;
+  return {distance:Math.max(1,Math.hypot(dx,dy)),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};
+}
+function beginGesture(){
+  const pts=[...activePointers.values()];
+  if(!pts.length){gesture=null;dragging=false;dragMode=null;surface.classList.remove('dragging');return;}
+  dragging=true; surface.classList.add('dragging');
+  if(pts.length>=2){
+    const m=getTwoPointerMetrics();
+    gesture={type:'pinch',distance:m.distance,cx:m.cx,cy:m.cy,camDistance:distance,pan:{...pan}};
+  }else{
+    const p=pts[0];
+    gesture={type:'single',x:p.x,y:p.y,yaw,pitch,roll,pan:{...pan},rollAngle:screenRollAngle(p.x,p.y),shift:!!p.shiftKey,button:p.button};
+    dragMode=(p.button===1||p.button===2)?'pan':(p.shiftKey?'roll':'orbit');
+    startX=p.x;startY=p.y;startYaw=yaw;startPitch=pitch;startRoll=roll;startPan={...pan};startRollAngle=screenRollAngle(p.x,p.y);
+  }
+}
+surface.addEventListener('pointerdown',ev=>{
+  ev.preventDefault();ev.stopPropagation();
+  if(k)k.set('control.locked','true');stopPlay();
+  activePointers.set(ev.pointerId,{...pointerPoint(ev),button:ev.button,shiftKey:ev.shiftKey});
+  try{surface.setPointerCapture(ev.pointerId)}catch(e){}
+  beginGesture();
+});
+surface.addEventListener('pointermove',ev=>{
+  if(!activePointers.has(ev.pointerId))return;
+  ev.preventDefault();ev.stopPropagation();
+  activePointers.set(ev.pointerId,{...pointerPoint(ev),button:ev.button,shiftKey:ev.shiftKey});
+  if(activePointers.size>=2){
+    const m=getTwoPointerMetrics();if(!m||!gesture||gesture.type!=='pinch')beginGesture();
+    const g=gesture;if(!g||g.type!=='pinch')return;
+    // Pinch distance scales camera distance; moving the midpoint pans the view.
+    const ratio=g.distance/m.distance;
+    if(!distanceLocked) distance=clamp(g.camDistance*ratio,BASE_DISTANCE*.00001,BASE_DISTANCE*100000);
+    const c=cameraState(),s=Math.max(.00001,g.camDistance*.0024);
+    const dx=m.cx-g.cx,dy=m.cy-g.cy;
+    pan.x=g.pan.x+c.right.x*(dx*s)+c.up.x*(-dy*s);
+    pan.y=g.pan.y+c.right.y*(dx*s)+c.up.y*(-dy*s);
+    pan.z=g.pan.z+c.right.z*(dx*s)+c.up.z*(-dy*s);
+    distEl.value=multiplierToSlider(distance/BASE_DISTANCE);if(!distanceLocked)applyDistance();else updateView();return;
+  }
+  if(!gesture||gesture.type!=='single')beginGesture();
+  const g=gesture;if(!g||g.type!=='single')return;
+  const dx=ev.clientX-g.x,dy=ev.clientY-g.y;
+  if(dragMode==='orbit'){yaw=g.yaw+dx*.32;pitch=clamp(g.pitch-dy*.24,-179,179);updateView()}
+  else if(dragMode==='roll'){roll=g.roll+deg(screenRollAngle(ev.clientX,ev.clientY)-g.rollAngle);updateView()}
+  else if(dragMode==='pan'){const c=cameraState();const s=Math.max(.00001,distance*.0024);pan.x=g.pan.x+c.right.x*(dx*s)+c.up.x*(-dy*s);pan.y=g.pan.y+c.right.y*(dx*s)+c.up.y*(-dy*s);pan.z=g.pan.z+c.right.z*(dx*s)+c.up.z*(-dy*s);updateView()}
+});
+function finishPointer(ev){
+  ev.stopPropagation();activePointers.delete(ev.pointerId);
+  try{surface.releasePointerCapture(ev.pointerId)}catch(e){}
+  if(activePointers.size){beginGesture();}else{gesture=null;dragging=false;dragMode=null;surface.classList.remove('dragging');if(k)k.set('control.locked','true');}
+}
+surface.addEventListener('pointerup',finishPointer);
+surface.addEventListener('pointercancel',finishPointer);
+surface.addEventListener('lostpointercapture',ev=>{if(activePointers.has(ev.pointerId))finishPointer(ev)});
+surface.addEventListener('wheel',ev=>{ev.preventDefault();ev.stopPropagation();if(distanceLocked)return;stopPlay();const factor=ev.deltaY>0?1.085:1/1.085;distance=clamp(distance*factor,BASE_DISTANCE*.00001,BASE_DISTANCE*100000);distEl.value=multiplierToSlider(distance/BASE_DISTANCE);applyDistance()},{passive:false});
+/* dblclick removed */
+/* Block ALL mouse events from bubbling to krpano (it listens on window/document) */
+['mousedown','mouseup','mousemove','click','dblclick'].forEach(function(t){
+  surface.addEventListener(t,function(e){
+    e.stopPropagation();
+    if(t==='dblclick'){e.preventDefault();e.stopImmediatePropagation();
+      if(k){k.set('control.locked','true');k.set('view.fov',70);k.call('view.update();')}
+    }
+  });
+});
+/* Capture-phase block on document: intercept BEFORE krpano gets the event */
+['mousedown','mouseup','mousemove','click','dblclick'].forEach(function(t){
+  document.addEventListener(t,function(e){
+    if(e.target===surface||surface.contains(e.target)){
+      e.stopPropagation();
+      if(t==='dblclick'){e.preventDefault();e.stopImmediatePropagation()}
+    }
+  },{capture:true});
+});
+distEl.addEventListener('input',()=>{if(distanceLocked)return;stopPlay();applyDistance()});document.getElementById('distLock').addEventListener('click',()=>{distanceLocked=!distanceLocked;distEl.disabled=distanceLocked;const b=document.getElementById('distLock');b.classList.toggle('locked',distanceLocked);b.innerHTML=distanceLocked?'&#128274;':'&#128275;';b.title=distanceLocked?'Снять фиксацию дистанции':'Зафиксировать дистанцию';b.setAttribute('aria-pressed',String(distanceLocked));showToast(distanceLocked?'Дистанция зафиксирована 🔒':'Дистанция разблокирована 🔓')});scaleEl.addEventListener('input',applyScale);aaEl.addEventListener('input',applyAA);speedEl.addEventListener('input',()=>{playSpeedDeg=Number(speedEl.value);document.getElementById('speedValue').textContent=playSpeedDeg.toFixed(1)+'\u00b0/s'});
+
+document.getElementById('weatherMode').addEventListener('change',()=>{applyWeather(document.getElementById('weatherMode').value,document.getElementById('weatherIntensity').value,document.getElementById('weatherSpeed').value);showToast('Погода: '+document.getElementById('weatherMode').selectedOptions[0].text)});
+document.getElementById('weatherIntensity').addEventListener('input',()=>{document.getElementById('weatherIntensityValue').textContent=document.getElementById('weatherIntensity').value+'%';applyWeather(document.getElementById('weatherMode').value,document.getElementById('weatherIntensity').value,document.getElementById('weatherSpeed').value)});
+document.getElementById('weatherSpeed').addEventListener('input',()=>{document.getElementById('weatherSpeedValue').textContent=Number(document.getElementById('weatherSpeed').value).toFixed(2)+'×';applyWeather(document.getElementById('weatherMode').value,document.getElementById('weatherIntensity').value,document.getElementById('weatherSpeed').value)});
+
+document.getElementById('panelToggle').addEventListener('click',()=>{const p=document.getElementById('panel');p.classList.toggle('collapsed');axesCanvas.classList.toggle('shifted',!p.classList.contains('collapsed'))});document.getElementById('toolAxes').addEventListener('click',toggleAxes);document.getElementById('axesToggle2').addEventListener('click',toggleAxes);
+document.getElementById('upZ').addEventListener('click',()=>setUpAxis('Z'));
+document.getElementById('upMinusZ').addEventListener('click',()=>setUpAxis('-Z'));
+document.getElementById('upY').addEventListener('click',()=>setUpAxis('Y'));
+document.getElementById('upMinusY').addEventListener('click',()=>setUpAxis('-Y'));
+document.getElementById('upX').addEventListener('click',()=>setUpAxis('X'));
+document.getElementById('upMinusX').addEventListener('click',()=>setUpAxis('-X'));document.getElementById('toolPlay').addEventListener('click',()=>playOn?stopPlay():startPlay());document.getElementById('toolHome').addEventListener('click',resetCamera);document.getElementById('toolReset').addEventListener('click',resetAll);document.getElementById('reset2').addEventListener('click',resetCamera);/* pivotReset removed */document.getElementById('sort').addEventListener('click',()=>{sortIndex=(sortIndex+1)%sortModes.length;applySort()});document.getElementById('mode').addEventListener('click',()=>{perspective=!perspective;applyMode()});document.getElementById('saveView').addEventListener('click',saveView);document.getElementById('loadView').addEventListener('click',loadView);document.getElementById('copyLink').addEventListener('click',copyLink);document.getElementById('clearView').addEventListener('click',()=>{localStorage.removeItem('3XyzMedia_single_view_v3');showShareUrl('');showToast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u0443\u0434\u0430\u043b\u0435\u043d\u043e')});
+window.addEventListener('resize',()=>{updateView();drawAxes();if(weatherMode!=='off')resizeSnowOverlay()});window.addEventListener('keydown',ev=>{if(ev.key==='r'||ev.key==='R')resetCamera();if(ev.code==='Space'&&!ev.repeat){ev.preventDefault();playOn?stopPlay():startPlay()}});
+async function init(){
+  await loadPivotFile();
+  const fromURL=loadURLState();
+  if(!fromURL){setUpAxis('Z')}
+  else{showShareUrl(currentShareUrl())}
+  sharedStartState=state();
+  if(fromURL && sharedStartState.b){showShareUrl(currentShareUrl())}
+
+  // Save the factory view once on the creator's device. Visitors opening a
+  // shared URL won't get this key, so their Reset returns to the shared view.
+  if(!fromURL){try{if(!localStorage.getItem('3XyzMedia_factory_view_v1'))localStorage.setItem('3XyzMedia_factory_view_v1',JSON.stringify(state()))}catch(e){}}
+}
+embedpano({target:'pano',xml:sceneXml,html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:async function(krpano){k=krpano;await init();document.getElementById('weatherIntensityValue').textContent=weatherIntensity+'%';document.getElementById('weatherSpeedValue').textContent=weatherSpeed.toFixed(2)+'×';const _p=document.getElementById('panel');axesCanvas.classList.toggle('shifted',!_p.classList.contains('collapsed'));drawAxes();startScreenWeather();showToast('3XyzMedia RGB Bridge\u2122 v4.25 \u0433\u043e\u0442\u043e\u0432 \u2713')}});
+</script>
+</body></html>
