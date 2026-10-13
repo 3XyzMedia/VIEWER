@@ -71,7 +71,7 @@ const sceneXml = initialParams.get('xml') || initialParams.get('scene') || 'scen
 // krpano's view matrix, so camera orbit/pan cannot rotate or translate flakes.
 const snowCanvas = document.getElementById('snowOverlay');
 const snowCtx = snowCanvas.getContext('2d', { alpha: true });
-const snowEnabled = sceneXml.split('/').pop().split('?')[0] === 'scene_model2.xml';
+const snowEnabled = false; // index_save.html: screen-space snow disabled
 let snowW = 0, snowH = 0, snowDpr = 1, snowParticles = [], snowFrame = 0, snowLastTime = 0;
 function resizeSnowOverlay(){
   snowDpr = Math.min(window.devicePixelRatio || 1, 2);
