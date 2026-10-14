@@ -1,11 +1,30 @@
 <krpanoview>
-    <action name="init_lightning">...</action> <!-- Инициализация -->
-    <action name="strike_lightning(x,y,z,intensity)">...</action> <!-- Действие вызова -->
+    <!-- Инициализация состояния -->
+    <action name="init_lightning">
+        %$lightning_pos_x = 0;
+        %$lightning_pos_y = 0;
+        %$lightning_pos_z = 0;
+        %$lightning_intensity = 0;
+    </action>
+    
+    <!-- Действие вызова из JS -->
+    <action name="strike_lightning(x,y,z,intensity)">
+        set($lightning_pos_x, %1);
+        set($lightning_pos_y, %2);
+        set($lightning_pos_z, %3);
+        set($$lightning_intensity, %4);
+        
+        // Передаём данные обратно в браузер через глобальную переменную
+        call(js_apply_lightning());
+    </action>
     
     <!-- Передача данных в JavaScript -->
     <script>
         function js_apply_lightning() {
-            window.lightningData = { ... };
+            window.lightningData = {
+                pos: [get('$lightning_pos_x'), get('$lightning_pos_y'), get('$lightning_pos_z')],
+                intensity: parseFloat(get('$lightning_intensity'))
+            };
         }
     </script>
 </krpanoview>
