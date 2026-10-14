@@ -1,0 +1,8 @@
+<krpanoview>
+    <include url="%SWFPATH%/plugins/splats.kml" />
+    
+    <!-- Загрузка вашей модели -->
+    <image type="SPLATS">
+        <splinefile url="model/model.ply"/>
+    </image>
+</krpanoview>
