@@ -1,12 +1,13 @@
-<krpanoview>
-    <include url="%SWFPATH%/plugins/splats.kml" />
-    
-    <!-- Загрузка вашей модели -->
-    <image type="SPLATS">
-        <splinefile url="./model/micro.ply"/>
+<krpano version="1.24" title="3XyzMedia RGB Bridge - Gaussian Viewer v4.14">
+    <image>
+        <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/Model_KKK.ply"
+                scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
+                rotationorder="YXZ" antialias="0.30"/>
     </image>
 
-    <!-- Ваши эффекты -->
-    <include url="kml/effects.kml" />
-    <include url="kml/lightning.kml" />
-</krpanoview>
+    <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200"
+          fovtype="VFOV" fov="70" fovmin="15" fovmax="150"
+          maxtilt="179" mintilt="-179"/>
+
+    <control locked="true"/>
+</krpano>
