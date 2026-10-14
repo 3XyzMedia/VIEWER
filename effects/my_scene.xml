@@ -3,6 +3,6 @@
     
     <!-- Загрузка вашей модели -->
     <image type="SPLATS">
-        <splinefile url="model/model.ply"/>
+        <splinefile url="model/micro.ply"/>
     </image>
 </krpanoview>
