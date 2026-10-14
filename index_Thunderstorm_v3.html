@@ -58,162 +58,136 @@
 </div>
 
 <script src="krpano.js"></script>
-<script type="module">
-    import * as THREE from 'https://cdn.skypack.dev/three@^0.155';
+<script>
+/* ⚡ LIGHTNING RENDERER START ⚡ //
+Создание холста для рисования молнии */
+const lightningCanvas = document.createElement('canvas');
+document.body.appendChild(lightningCanvas);
+lightningCanvas.id = 'lightningCanvas'; // Чтобы стиль сработал
 
-    let k = null;
+let lCtx = null;
+let lightningFrameID = null;
 
-    // ⚡ LIGHTNING RENDERER START ⚡ //
+// Масштабируем холст под разрешение экрана
+function resizeLightningCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.round(window.innerWidth * dpr);
+    const h = Math.round(window.innerHeight * dpr);
 
-    // Создание холста для рисования молнии
-    const lightningCanvas = document.createElement('canvas');
-    document.body.appendChild(lightningCanvas);
-    lightningCanvas.id = 'lightningCanvas'; // Чтобы стиль сработал
+    lightningCanvas.width = w;
+    lightningCanvas.height = h;
+    lightningCanvas.style.width = `${window.innerWidth}px`;
+    lightningCanvas.style.height = `${window.innerHeight}px`;
 
-    let lCtx = null;
-    let lightningFrameID = null;
+    if(lCtx) lCtx.setTransform(dpr, 0, 0, dpr, 0, 0); // Если контекст создан
+}
+resizeLightningCanvas(); // Вызываем сразу при загрузке страницы
 
-    async function initLightningShader() {
-        // Создаём простую плоскость-биллборд (она всегда смотрит на камеру).
-        const geometry = new THREE.PlaneGeometry(10, 10);
-        const material = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
-            },
-            vertexShader: `
-                void main()	{
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0 );
-                }
-            `,
-            fragmentShader: await fetch('./shaders/lightning.frag').then(r => r.text())
-        });
+// Рисование молнии на Canvas поверх сцены
+function drawLightning(now) {
+    cancelAnimationFrame(lightningFrameID);
 
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.quaternion.copy(camera.quaternion); // Плоскость смотрит туда же, куда камера.
+    if (!window.lightningData || !lCtx) return;
 
-        // WebGLRenderer нужен только для молнии.
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.render(mesh, camera);
+    const data = window.lightningData;
+    delete window.lightningData; // Очищаем буфер
 
-        // Обновление времени в шейдере
-        requestAnimationFrame(() => {
-            material.uniforms.uTime.value++;
-            renderer.render(mesh, camera);
-            requestAnimationFrame(arguments.callee);
-        });
-    }
+    const w = lightningCanvas.width;
+    const h = lightningCanvas.height;
 
-    // Рисование молнии на Canvas поверх сцены
-    function drawLightning(now) {
-        cancelAnimationFrame(lightningFrameID);
+    // Преобразуем мировые координаты удара (-5..+5) в пиксели
+    // 🔥 ВАЖНОЕ ИЗМЕНЕНИЕ ПОД ТВОЮ СЦЕНУ:
+    // У тебя модель занимает пространство примерно от -200 до +200 по Z,
+    // поэтому умножим координату на масштаб твоей сцены.
+    const px = ((data.pos[0] / 200) * w) + (w / 2);
+    const py = ((data.pos[2] / 200) * h) + (h / 2);
 
-        if (!window.lightningData || !lCtx) return;
+    lCtx.clearRect(0, 0, w, h);
+    lCtx.globalAlpha = data.intensity * 0.5;
 
-        const data = window.lightningData;
-        delete window.lightningData;
+    // Основной ствол
+    lCtx.beginPath();
+    lCtx.moveTo(px, py);
+    lCtx.lineTo(px, py - 100);
+    lCtx.strokeStyle = '#ffffff';
+    lCtx.lineWidth = 5;
+    lCtx.stroke();
 
-        const w = lightningCanvas.width;
-        const h = lightningCanvas.height;
+    // Ветви
+    for(let i = 0; i < 5; i++) {
+        const angle = (i * Math.PI * 0.2) + now * 0.1;
+        const dx = Math.sin(angle) * 50;
+        const dy = Math.cos(angle) * 50;
 
-        // Преобразуем мировые координаты удара (-5..+5) в пиксели
-        const px = ((data.pos[0] + 5) / 10) * w;
-        const py = ((data.pos[2] + 5) / 10) * h;
-
-        lCtx.clearRect(0, 0, w, h);
-        lCtx.globalAlpha = data.intensity * 0.5;
-
-        // Основной ствол
         lCtx.beginPath();
         lCtx.moveTo(px, py);
-        lCtx.lineTo(px, py - 100);
-        lCtx.strokeStyle = '#ffffff';
-        lCtx.lineWidth = 5;
+        lCtx.lineTo(px + dx, py - dy);
+        lCtx.strokeStyle = `hsla(${i * 60}, 100%, ${Math.round(data.intensity * 50)}%, 1)`;
+        lCtx.lineWidth = 2 + data.intensity * 2;
         lCtx.stroke();
-
-        // Ветви
-        for(let i = 0; i < 5; i++) {
-            const angle = (i * Math.PI * 0.2) + now * 0.1;
-            const dx = Math.sin(angle) * 50;
-            const dy = Math.cos(angle) * 50;
-
-            lCtx.beginPath();
-            lCtx.moveTo(px, py);
-            lCtx.lineTo(px + dx, py - dy);
-            lCtx.strokeStyle = `hsla(${i * 60}, 100%, ${Math.round(data.intensity * 50)}%, 1)`;
-            lCtx.lineWidth = 2 + data.intensity * 2;
-            lCtx.stroke();
-        }
-
-        // Послеимпульс (Afterglow)
-        lCtx.fillStyle = `rgba(255, 255, 255, ${data.intensity * 0.1})`;
-        lCtx.beginPath();
-        lCtx.ellipse(px, py, 100, 100, 0, 0, Math.PI * 2);
-        lCtx.fill();
-
-        // Повторный вызов для плавного затухания
-        lightningFrameID = requestAnimationFrame(drawLightning);
     }
 
-    // ⚡ LIGHTNING RENDERER END ⚡ //
+    // Послеимпульс (Afterglow)
+    lCtx.fillStyle = `rgba(255, 255, 255, ${data.intensity * 0.1})`;
+    lCtx.beginPath();
+    lCtx.ellipse(px, py, 100, 100, 0, 0, Math.PI * 2);
+    lCtx.fill();
 
-    // Инициализация krpano
-    embedpano({
-        target:'pano',
-        xml:'scene5.xml', // ТВОЙ ФАЙЛ СЦЕНЫ
-        html5:'only+webgl',
-        focus:true,
-        mobilescale:1,
-        bgcolor:'#05070b',
-        onready: async function(krpano) {
-            k = krpano;
+    // Повторный вызов для плавного затухания
+    lightningFrameID = requestAnimationFrame(drawLightning);
+}
 
-            // Запускаем рендерер молньи через Three.js
-            await initLightningShader();
+// Запускает цикл рисования при наличии данных
+window.drawLightning = drawLightning;
 
-            // Кнопки
-            document.getElementById('btnPlay').onclick = () => k.call('action(play)');
-            document.getElementById('btnHome').onclick = () => k.call('lookto(0,0,90,90,smooth(1000));');
-            document.getElementById('btnReset').onclick = () => k.call('resetview();');
+// ⚡ LIGHTNING RENDERER END ⚡ //
 
-            // Вызов молнии
-            document.getElementById('btnLightning').onclick = () => {
-                // Генерируем удар в диапазоне [-5..+5]
-                k.call("strike_lightning(%1,%2,%3,%4)",
-                    Math.random() * 10 - 5, // X
-                    0,                       // Y (удар о землю)
-                    Math.random() * 10 - 5, // Z
-                    1                        // Интенсивность
-                );
-            };
+// Инициализация krpano
+embedpano({
+    target:'pano',
+    // ✅ ЗАМЕНИ ЭТОТ ПАРАМЕТР НА ТОТ ФАЙЛ, КОТОРЫЙ ХОЧЕШЬ ИСПОЛЬЗОВАТЬ
+    xml:"effects/kml/my_scene.xml", 
+    
+    html5:'only+webgl',
+    focus:true,
+    mobilescale:1,
+    bgcolor:'#05070b',
+    onready: async function(krpano) {
+        let k = krpano;
 
-            // Получаем данные из движка при вызове действия strike_lightning
-            window.addEventListener('load', () => {
-                resizeLightningCanvas();
-                lCtx = lightningCanvas.getContext('2d');
-            });
+        // Получаем данные из движка при вызове действия strike_lightning
+        window.addEventListener('load', () => {
+            resizeLightningCanvas();
+            lCtx = lightningCanvas.getContext('2d'); // Создаём графический контекст
+        });
 
-            // Масштабируем холст под разрешение экрана
-            function resizeLightningCanvas() {
-                const dpr = Math.min(window.devicePixelRatio || 1, 2);
-                const w = Math.round(window.innerWidth * dpr);
-                const h = Math.round(window.innerHeight * dpr);
+        // Кнопки
+        document.getElementById('btnPlay').onclick = () => k.call('action(play)');
+        document.getById('btnHome').onclick = () => k.call('lookto(0,0,90,90,smooth(1000));');
+        document.getById('btnReset').onclick = () => k.call('resetview();');
 
-                lightningCanvas.width = w;
-                lightningCanvas.height = h;
-                lightningCanvas.style.width = `${window.innerWidth}px`;
-                lightningCanvas.style.height = `${window.innerHeight}px`;
+        // 💥 ОСНОВНАЯ ЧАСТЬ ДЛЯ РАБОТЫ МОЛНИИ
+        // Добавь свой новый файл lightning.kml в папку effects/kml/
+        // Или используй старый effects.kml, если там есть это действие.
+        
+        // Вызов молнии
+        document.getById('btnLightning').onclick = () => {
+            // Генерируем удар в пределах вашей камеры
+            // 🔥 ВАЖНЫЕ ЦИФРЫ ДЛЯ ТВОЕЙ СЦЕНЫ:
+            // Координата Y всегда равна нулю (удар о землю).
+            // X и Z генерируются в диапазоне [-200 .. +200], как у твоей модели.
+            k.call("strike_lightning(%1,%2,%3,%4)",
+                Math.random() * 400 - 200, // X
+                0,                       // Y
+                Math.random() * 400 - 200, // Z
+                1                        // Интенсивность
+            );
+        };
 
-                lCtx?.setTransform(dpr, 0, 0, dpr, 0, 0);
-            }
-
-            window.addEventListener('resize', resizeLightningCanvas);
-
-            // Отрисовка молнии запускается автоматически при получении данных
-            window.drawLightning = drawLightning;
-        }
-    });
+        // Обработчик изменения размера окна
+        window.addEventListener('resize', resizeLightningCanvas);
+    }
+});
 </script>
 </body>
 </html>
