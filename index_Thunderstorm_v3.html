@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Krpano Lightning Viewer</title>
+    <style>
+        /* Базовые стили */
+        body, #surface { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #05070b; font-family: Arial, sans-serif; }
+        #pano { position: absolute; inset: 0; } /* Для krpano */
+
+        /* Панель инструментов */
+        #toolbar {
+            position: fixed;
+            left: 16px;
+            top: 16px;
+            z-index: 50;
+            display: flex;
+            gap: 6px;
+            padding: 6px;
+            border-radius: 12px;
+            background: rgba(5,8,14,.72);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(250,250,250,.12);
+        }
+        .tool {
+            min-width: 42px;
+            height: 36px;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            background: rgba(255,255,255,.10);
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .tool.active { background: #fff; color: #0b0f16; }
+
+        /* Молния */
+        canvas#lightningCanvas {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<div id="pano"></div><!-- Это контейнер для krpano -->
+<div id="surface"></div><!-- Поверхность для тач-контроля -->
+
+<!-- Панель кнопок -->
+<div id="toolbar">
+    <button class="tool active" title="Показать оси XYZ">XYZ</button>
+    <button class="tool play" id="btnPlay" title="Плавный круг камеры вокруг pivot">▶ PLAY</button>
+    <button class="tool" id="btnHome" title="Сброс камеры вокруг текущего pivot">⟳</button>
+    <button class="tool" id="btnReset" title="Полный сброс">↺</button>
+    <button class="tool" id="btnLightning" title="Молния">🌩️</button>
+</div>
+
+<script src="krpano.js"></script>
+<script type="module">
+    import * as THREE from 'https://cdn.skypack.dev/three@^0.155';
+
+    let k = null;
+
+    // ⚡ LIGHTNING RENDERER START ⚡ //
+
+    // Создание холста для рисования молнии
+    const lightningCanvas = document.createElement('canvas');
+    document.body.appendChild(lightningCanvas);
+    lightningCanvas.id = 'lightningCanvas'; // Чтобы стиль сработал
+
+    let lCtx = null;
+    let lightningFrameID = null;
+
+    async function initLightningShader() {
+        // Создаём простую плоскость-биллборд (она всегда смотрит на камеру).
+        const geometry = new THREE.PlaneGeometry(10, 10);
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+            },
+            vertexShader: `
+                void main()	{
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0 );
+                }
+            `,
+            fragmentShader: await fetch('./shaders/lightning.frag').then(r => r.text())
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.quaternion.copy(camera.quaternion); // Плоскость смотрит туда же, куда камера.
+
+        // WebGLRenderer нужен только для молнии.
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.render(mesh, camera);
+
+        // Обновление времени в шейдере
+        requestAnimationFrame(() => {
+            material.uniforms.uTime.value++;
+            renderer.render(mesh, camera);
+            requestAnimationFrame(arguments.callee);
+        });
+    }
+
+    // Рисование молнии на Canvas поверх сцены
+    function drawLightning(now) {
+        cancelAnimationFrame(lightningFrameID);
+
+        if (!window.lightningData || !lCtx) return;
+
+        const data = window.lightningData;
+        delete window.lightningData;
+
+        const w = lightningCanvas.width;
+        const h = lightningCanvas.height;
+
+        // Преобразуем мировые координаты удара (-5..+5) в пиксели
+        const px = ((data.pos[0] + 5) / 10) * w;
+        const py = ((data.pos[2] + 5) / 10) * h;
+
+        lCtx.clearRect(0, 0, w, h);
+        lCtx.globalAlpha = data.intensity * 0.5;
+
+        // Основной ствол
+        lCtx.beginPath();
+        lCtx.moveTo(px, py);
+        lCtx.lineTo(px, py - 100);
+        lCtx.strokeStyle = '#ffffff';
+        lCtx.lineWidth = 5;
+        lCtx.stroke();
+
+        // Ветви
+        for(let i = 0; i < 5; i++) {
+            const angle = (i * Math.PI * 0.2) + now * 0.1;
+            const dx = Math.sin(angle) * 50;
+            const dy = Math.cos(angle) * 50;
+
+            lCtx.beginPath();
+            lCtx.moveTo(px, py);
+            lCtx.lineTo(px + dx, py - dy);
+            lCtx.strokeStyle = `hsla(${i * 60}, 100%, ${Math.round(data.intensity * 50)}%, 1)`;
+            lCtx.lineWidth = 2 + data.intensity * 2;
+            lCtx.stroke();
+        }
+
+        // Послеимпульс (Afterglow)
+        lCtx.fillStyle = `rgba(255, 255, 255, ${data.intensity * 0.1})`;
+        lCtx.beginPath();
+        lCtx.ellipse(px, py, 100, 100, 0, 0, Math.PI * 2);
+        lCtx.fill();
+
+        // Повторный вызов для плавного затухания
+        lightningFrameID = requestAnimationFrame(drawLightning);
+    }
+
+    // ⚡ LIGHTNING RENDERER END ⚡ //
+
+    // Инициализация krpano
+    embedpano({
+        target:'pano',
+        xml:'scene5.xml', // ТВОЙ ФАЙЛ СЦЕНЫ
+        html5:'only+webgl',
+        focus:true,
+        mobilescale:1,
+        bgcolor:'#05070b',
+        onready: async function(krpano) {
+            k = krpano;
+
+            // Запускаем рендерер молньи через Three.js
+            await initLightningShader();
+
+            // Кнопки
+            document.getElementById('btnPlay').onclick = () => k.call('action(play)');
+            document.getElementById('btnHome').onclick = () => k.call('lookto(0,0,90,90,smooth(1000));');
+            document.getElementById('btnReset').onclick = () => k.call('resetview();');
+
+            // Вызов молнии
+            document.getElementById('btnLightning').onclick = () => {
+                // Генерируем удар в диапазоне [-5..+5]
+                k.call("strike_lightning(%1,%2,%3,%4)",
+                    Math.random() * 10 - 5, // X
+                    0,                       // Y (удар о землю)
+                    Math.random() * 10 - 5, // Z
+                    1                        // Интенсивность
+                );
+            };
+
+            // Получаем данные из движка при вызове действия strike_lightning
+            window.addEventListener('load', () => {
+                resizeLightningCanvas();
+                lCtx = lightningCanvas.getContext('2d');
+            });
+
+            // Масштабируем холст под разрешение экрана
+            function resizeLightningCanvas() {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                const w = Math.round(window.innerWidth * dpr);
+                const h = Math.round(window.innerHeight * dpr);
+
+                lightningCanvas.width = w;
+                lightningCanvas.height = h;
+                lightningCanvas.style.width = `${window.innerWidth}px`;
+                lightningCanvas.style.height = `${window.innerHeight}px`;
+
+                lCtx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+
+            window.addEventListener('resize', resizeLightningCanvas);
+
+            // Отрисовка молнии запускается автоматически при получении данных
+            window.drawLightning = drawLightning;
+        }
+    });
+</script>
+</body>
+</html>

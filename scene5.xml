@@ -1,0 +1,12 @@
+<krpanoview>
+    <include url="%SWFPATH%/plugins/splats.kml" />
+    
+    <!-- Загрузка вашей модели -->
+    <image type="SPLATS">
+        <splinefile url="model/model.ply"/>
+    </image>
+
+    <!-- Ваши эффекты -->
+    <include url="kml/effects.kml" />
+    <include url="kml/lightning.kml" />
+</krpanoview>
