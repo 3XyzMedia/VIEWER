@@ -1,25 +1,22 @@
 <krpanoview>
-    <!-- Инициализация состояния -->
     <action name="init_lightning">
         %$lightning_pos_x = 0;
         %$lightning_pos_y = 0;
         %$lightning_pos_z = 0;
         %$lightning_intensity = 0;
     </action>
-<action name="onstart">
-    <!-- Преобразуем относительные пути к сцене -->
-    set(xml,%URLPARAM[xml]);
-</action>
-
-    <!-- Действие вызова из JavaScript -->
+    
+    <!-- Вызов из JS -->
     <action name="strike_lightning(x,y,z,intensity)">
         set($lightning_pos_x, %1);
         set($lightning_pos_y, %2);
         set($lightning_pos_z, %3);
         set($lightning_intensity, %4);
+        
+        // Передаём данные обратно в браузер
         call(js_apply_lightning());
     </action>
-
+    
     <!-- Передача данных в JS -->
     <script>
         function js_apply_lightning() {
