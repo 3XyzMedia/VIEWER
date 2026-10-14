@@ -2,8 +2,7 @@
     <image>
         <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/micro.ply"
                 scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
-                rotationorder="YXZ" 
-                antialias="0.30"/>
+                rotationorder="YXZ" antialias="0.30"/>
     </image>
 
     <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200"
