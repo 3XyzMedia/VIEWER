@@ -4,6 +4,8 @@
                 scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
                 rotationorder="YXZ" antialias="0.30"/>
     </image>
+    <include url="%SWFPATH%/plugins/splats.kml" /> <include url="effects/effects.kml" /> <!-- Твой существующий файл -->
+    <include url="effects/lightning.kml" />
     <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200"
           fovtype="VFOV" fov="70" fovmin="15" fovmax="150"
           maxtilt="179" mintilt="-179"/>
