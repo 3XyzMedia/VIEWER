@@ -185,6 +185,121 @@ window.drawLightning = drawLightning;
         window.addEventListener('resize', resizeLightningCanvas);
     }
 });
+    // ⚡ LIGHTNING RENDERER START ⚡ //
+
+// Создание холста для рисования молнии
+const lightningCanvas = document.createElement('canvas');
+document.body.appendChild(lightningCanvas);
+lightningCanvas.id = 'lightningCanvas'; // Чтобы стиль сработал
+
+let lCtx = null; // Контекст рисования
+let lightningFrameID = null; // Для анимации затухания
+
+// Масштабируем холст под разрешение экрана
+function resizeLightningCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.round(window.innerWidth * dpr);
+    const h = Math.round(window.innerHeight * dpr);
+
+    lightningCanvas.width = w;
+    lightningCanvas.height = h;
+    lightningCanvas.style.width = `${window.innerWidth}px`;
+    lightningCanvas.style.height = `${window.innerHeight}px`;
+
+    if(lCtx) lCtx.setTransform(dpr, 0, 0, dpr, 0, 0); // Если контекст создан
+}
+resizeLightningCanvas(); // Инициализируем сразу при загрузке страницы
+
+// Рисование молнии на Canvas поверх сцены
+function drawLightning(now) {
+    cancelAnimationFrame(lightningFrameID);
+
+    // Проверяем наличие данных от движка
+    if (!window.lightningData || !lCtx) return;
+
+    // Получаем координаты удара и интенсивность
+    const data = window.lightningData;
+    delete window.lightningData; // Очищаем буфер после использования
+
+    // Преобразуем мировые координаты удара в пиксели на экране
+    // 🔥 ВАЖНОЕ ПРЕОБРАЗОВАНИЕ ПОД ТВОЮ СЦЕНУ:
+    // Модель занимает пространство [-200..+200] по X/Z,
+    // Камера смотрит строго вдоль Z, поэтому удар должен попадать в кадр.
+    // Мы масштабируем координату Z так, чтобы она занимала весь экран сверху вниз.
+    const canvasW = lightningCanvas.width;
+    const canvasH = lightningCanvas.height;
+
+    // Коэффициент преобразования мировых координат в пиксельные
+    // Знак минус инвертирует ось Z относительно экрана
+    const zToScreenY = -data.pos[2] / 200 * canvasH + canvasH / 2;
+
+    // Координата X случайна в пределах видимой части сцены
+    const xToScreenX = ((data.pos[0] / 200) * canvasW) + (canvasW / 2);
+
+    // Центр удара на экране
+    const px = xToScreenX;
+    const py = zToScreenY;
+
+    lCtx.clearRect(0, 0, canvasW, canvasH);
+    lCtx.globalAlpha = data.intensity * 0.5;
+
+    // Основной ствол
+    lCtx.beginPath();
+    lCtx.moveTo(px, py);
+    lCtx.lineTo(px, py - 100);
+    lCtx.strokeStyle = '#ffffff';
+    lCtx.lineWidth = 5;
+    lCtx.stroke();
+
+    // Ветви
+    for(let i = 0; i < 5; i++) {
+        const angle = (i * Math.PI * 0.2) + now * 0.1;
+        const dx = Math.sin(angle) * 50;
+        const dy = Math.cos(angle) * 50;
+
+        lCtx.beginPath();
+        lCtx.moveTo(px, py);
+        lCtx.lineTo(px + dx, py - dy);
+        lCtx.strokeStyle = `hsla(${i * 60}, 100%, ${Math.round(data.intensity * 50)}%, 1)`;
+        lCtx.lineWidth = 2 + data.intensity * 2;
+        lCtx.stroke();
+    }
+
+    // Послеимпульс (Afterglow)
+    lCtx.fillStyle = `rgba(255, 255, 255, ${data.intensity * 0.1})`;
+    lCtx.beginPath();
+    lCtx.ellipse(px, py, 100, 100, 0, 0, Math.PI * 2);
+    lCtx.fill();
+
+    // Повторный вызов для плавного затухания
+    lightningFrameID = requestAnimationFrame(drawLightning);
+}
+
+// Запускает цикл рисования при наличии данных
+window.drawLightning = drawLightning;
+
+// Обработчик изменения размера окна
+window.addEventListener('resize', resizeLightningCanvas);
+
+// ⚡ LIGHTNING RENDERER END ⚡ //
+
+// 💥 ОСНОВНАЯ ЧАСТЬ ДЛЯ РАБОТЫ КНОПКИ
+// Добавляем событие клика на существующую кнопку "Молния"
+document.getById('btnLightning').onclick = () => {
+    // Генерируем удар в пределах вашей камеры
+    // Координата Y всегда равна нулю (удар о землю).
+    // Диапазон по X и Z подобран под вашу сцену (-200 .. +200).
+    k.call("strike_lightning(%1,%2,%3,%4)",
+        // Случайная точка по горизонтали (ось X)
+        Math.random() * 400 - 200,
+        // Удар о землю
+        0,
+        // Глубина по оси Z (отдалённость от камеры)
+        Math.random() * 200, // От центра до дальней границы кадра
+        // Интенсивность свечения
+        1                        // Можно регулировать от 0 до 1
+    );
+};
 </script>
 </body>
 </html>
