@@ -6,6 +6,10 @@
         %$lightning_pos_z = 0;
         %$lightning_intensity = 0;
     </action>
+<action name="onstart">
+    <!-- Преобразуем относительные пути к сцене -->
+    set(xml,%URLPARAM[xml]);
+</action>
 
     <!-- Действие вызова из JavaScript -->
     <action name="strike_lightning(x,y,z,intensity)">
