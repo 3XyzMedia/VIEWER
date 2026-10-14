@@ -3,7 +3,7 @@
     
     <!-- Загрузка вашей модели -->
     <image type="SPLATS">
-        <splinefile url="model/micro.ply"/>
+        <splinefile url="./model/micro.ply"/>
     </image>
 
     <!-- Ваши эффекты -->
