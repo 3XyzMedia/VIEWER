@@ -120,7 +120,7 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
       <label class="row" for="musicEnabled"><span class="label">Фоновая MP3-музыка</span><input id="musicEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label>
       <div class="row"><span class="label">Громкость музыки</span><span class="val" id="musicVolumeValue">30%</span></div>
       <input id="musicVolume" type="range" min="0" max="100" step="5" value="30">
-      <input id="musicUrl" class="weather-select" type="text" value="music/ambient.mp3" aria-label="Путь к MP3" placeholder="music/ambient.mp3 или URL">
+      <input id="musicUrl" class="weather-select" type="text" value="music/3.mp3" aria-label="Путь к MP3" placeholder="music/3.mp3 или URL">
       <div class="buttons"><button class="action" id="applyMusicUrl">Применить MP3</button><button class="action" id="musicStop">■ Стоп</button></div>
       <div class="small">Музыка сохраняется в ссылке. Автовоспроизведение со звуком зависит от разрешений браузера; кнопка ▶ MP3 всегда доступна на главном экране.</div>
       <div class="small">Чтобы музыка работала у всех посетителей, положи свой MP3 в папку music репозитория и укажи путь выше. Автозапуск не принудительный: браузер ждёт нажатия пользователя. Звуки интерфейса генерируются локально, дополнительные файлы не нужны.</div>
@@ -794,7 +794,7 @@ window.addEventListener('resize',()=>{updateView();drawAxes();if(weatherMode!=='
 // Audio v1: synthesized UI cues plus optional background MP3. Nothing autoplays on page load.
 let audioCtx=null, audioLastAt=0, musicObjectUrl=null;
 const musicAudio=new Audio(); musicAudio.loop=true; musicAudio.preload='none'; musicAudio.volume=.30;musicAudio.addEventListener('play',()=>{const b=document.getElementById('toolMusic');if(b)b.innerHTML='■ MP3'});musicAudio.addEventListener('pause',()=>{const b=document.getElementById('toolMusic');if(b)b.innerHTML='&#9654; MP3'});
-let musicPath='music/ambient.mp3';
+let musicPath='music/3.mp3';
 function ensureAudioContext(){if(!audioCtx){const AC=window.AudioContext||window.webkitAudioContext;if(AC)audioCtx=new AC()}if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});return audioCtx}
 function uiTone(kind='tap',force=false){
   if(!document.getElementById('uiSoundsEnabled')?.checked)return;
