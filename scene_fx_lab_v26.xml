@@ -1,0 +1,73 @@
+<krpano version="1.24" title="3XyzMedia Gaussian FX LAB v26">
+  <!-- Experimental scene only. Original scene.xml and PLY remain unchanged. -->
+  <image>
+    <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/SOY2.ply"
+      scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
+      rotationorder="YXZ" antialias="0.30"
+      shader="get:action[xyz_fx26_shader].content"
+      fx_mode="0" fx_progress="0" fx_power="1.0" fx_radius="100.0" />
+  </image>
+  <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200"
+    fovtype="VFOV" fov="70" fovmin="15" fovmax="150"
+    maxtilt="179" mintilt="-179"/>
+  <control locked="true"/>
+
+  <!-- Mode 0: untouched; 1: burst; 2: vortex; 3: reveal; 4: rainbow reveal.
+       GLSL signature is taken from official krpano 1.24 splatshader example.
+       Animation runs via JavaScript changing custom uniform values. -->
+  <action name="xyz_fx26_shader" type="glsl"><![CDATA[
+    uniform float fx_mode;
+    uniform float fx_progress;
+    uniform float fx_power;
+    uniform float fx_radius;
+
+    float xyz_hash(vec3 p) {
+      return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+    }
+    vec3 xyz_palette(float t) {
+      return 0.5 + 0.5 * cos(6.2831853 * (vec3(0.06,0.39,0.72) + t));
+    }
+    void splatshader(inout vec4 pos, inout mat3 mx, inout vec4 color) {
+      if (fx_mode < 0.5) return;
+      vec3 origin = pos.xyz;
+      float radius = max(fx_radius, 0.001);
+      float phase = clamp(fx_progress, 0.0, 1.0);
+      float amount = max(fx_power, 0.0);
+      float rnd = xyz_hash(origin);
+      float rnd2 = xyz_hash(origin.zxy + vec3(17.1));
+      float rnd3 = xyz_hash(origin.yzx + vec3(29.8));
+
+      if (fx_mode < 1.5) {
+        // BURST and reverse REBUILD: zero displacement at both ends.
+        float expansion = sin(3.14159265 * phase);
+        vec3 n = normalize(origin + vec3(0.0002, 0.0003, 0.0001));
+        vec3 jitter = normalize(vec3(rnd - 0.5, rnd2 - 0.5, rnd3 - 0.5) + vec3(0.0001));
+        vec3 dir = normalize(n * 0.62 + jitter * 0.75);
+        pos.xyz += dir * (radius * 0.5 * amount) * expansion * (0.25 + rnd * 0.9);
+        mx *= 1.0 - 0.30 * expansion;
+        color.rgb += expansion * 0.20 * xyz_palette(rnd);
+      } else if (fx_mode < 2.5) {
+        // VORTEX and reverse REBUILD around model local Z axis.
+        float expansion = sin(3.14159265 * phase);
+        float angle = expansion * amount * (2.0 + 5.0 * rnd);
+        float c = cos(angle), s = sin(angle);
+        vec2 xy = origin.xy;
+        vec2 rotated = vec2(c * xy.x - s * xy.y, s * xy.x + c * xy.y);
+        pos.xy = rotated * (1.0 + expansion * amount * 0.25);
+        pos.z = origin.z + expansion * radius * 0.24 * amount * (rnd2 - 0.5);
+        color.rgb += expansion * 0.15 * xyz_palette(rnd2);
+      } else {
+        // True per-splat radial reveal from the origin; final geometry unchanged.
+        float d = length(origin);
+        float edge = phase * radius * 1.2;
+        float width = max(radius * 0.08, 0.01);
+        float blend = smoothstep(d - width, d + width, edge);
+        mx *= max(blend, 0.000001);
+        if (fx_mode > 3.5) {
+          float band = exp(-pow((d-edge) / width, 2.0));
+          color.rgb += band * 0.65 * xyz_palette(d / radius * 3.0);
+        }
+      }
+    }
+  ]]></action>
+</krpano>
