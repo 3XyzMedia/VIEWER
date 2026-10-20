@@ -1,0 +1,1495 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3XyzMedia RGB Bridge&#8482; v44</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;font-family:Arial,sans-serif}
+#pano{position:absolute;inset:0}
+/* Screen-space effects are independent from krpano camera/model transforms. */
+#skyOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;display:none}
+#starsOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;display:none}
+#auroraOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;display:none}
+#snowOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:5;pointer-events:none;display:none}
+#rainRippleOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:6.5;pointer-events:none;display:none}
+#fireOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:6.7;pointer-events:none;display:none}
+#fxOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:6;pointer-events:none;display:none}
+#fireworksOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:7;pointer-events:none;display:none}
+#meteorOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:8;pointer-events:none;display:none}
+#surface{position:absolute;inset:0;z-index:10;cursor:grab;touch-action:none; -webkit-user-select:none;user-select:none}
+#surface.dragging{cursor:grabbing}
+#toolbar{position:fixed;left:16px;top:16px;z-index:50;display:flex;gap:5px;padding:5px;border-radius:12px;background:rgba(5,8,14,.72);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);max-width:calc(100vw - 76px);box-sizing:border-box}
+.tool{min-width:36px;height:36px;border:0;border-radius:9px;cursor:pointer;background:rgba(255,255,255,.10);color:#fff;font-size:14px;font-weight:800}
+.tool.play{min-width:62px;font-size:12px}
+#toolTour,#toolVideo{font-size:10px;min-width:47px}#toolEffects{min-width:48px;font-size:11px}#toolEffects.off{background:#f2b9b9;color:#1a0a0a}
+@media(max-width:600px){#toolbar{left:7px;top:7px;gap:3px;padding:3px}.tool{min-width:30px;height:32px;padding:0 6px;font-size:12px;border-radius:8px}.tool.play{min-width:55px;font-size:11px}#toolEffects{min-width:43px;font-size:10px}#panelToggle{right:7px;top:7px;width:34px;height:34px}#brand{top:49px;left:7px;max-width:calc(100vw - 32px);padding:5px 8px}#subtitle,#contact{display:none}#brand.expanded #subtitle,#brand.expanded #contact{display:block}#help{left:7px;bottom:48px;padding:6px 8px;font-size:10px;max-width:calc(100vw - 30px)}}
+.tool.active{background:#fff;color:#0b0f16}
+#brand{position:fixed;left:16px;top:68px;z-index:45;color:#fff;cursor:pointer;pointer-events:auto;background:rgba(5,8,14,.62);backdrop-filter:blur(8px);padding:7px 14px;border-radius:10px;border:1px solid rgba(78,235,255,.32);font-weight:700;letter-spacing:.35px;pointer-events:auto;max-width:380px;text-shadow:0 0 5px rgba(100,245,255,.35),0 0 14px rgba(65,190,255,.22);box-shadow:0 0 18px rgba(45,220,255,.13),inset 0 0 12px rgba(60,210,255,.055)}
+#subtitle{display:block;font-size:11px;font-weight:400;opacity:.7;margin-top:2px;line-height:1.3}
+#contact{display:block;font-size:11px;font-weight:400;color:#888888;margin-top:4px;line-height:1.3;white-space:nowrap}
+#help{position:fixed;left:16px;bottom:58px;z-index:30;color:#e9eef7;background:rgba(5,8,14,.60);backdrop-filter:blur(8px);padding:8px 11px;border-radius:10px;font-size:11px;pointer-events:none;line-height:1.45}
+#helpToggle{position:fixed;left:16px;bottom:16px;z-index:31;width:32px;height:32px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:rgba(5,8,14,.78);color:#fff;font-weight:700;cursor:pointer}
+#help{max-width:min(440px,calc(100vw - 24px))}#help.hidden{display:none}#brand:not(.expanded) #subtitle,#brand:not(.expanded) #contact{display:none}#brand.expanded{max-width:380px;border-color:#a5ff1c;box-shadow:0 0 8px #bdff00,0 0 24px rgba(161,255,0,.88),0 0 56px rgba(8,255,224,.58),inset 0 0 24px rgba(90,255,135,.22);animation:brandGlow 2.5s ease-in-out infinite alternate}#brand.expanded #subtitle{color:#eafff0;opacity:1}#brand.expanded #contact{color:#87fff0;opacity:1}@keyframes brandGlow{from{filter:brightness(1)}to{filter:brightness(1.32)}}
+#panelToggle{position:fixed;right:16px;top:16px;z-index:61;width:40px;height:38px;border:0;border-radius:11px;cursor:pointer;background:rgba(5,8,14,.82);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:17px}
+#panel{position:fixed;right:16px;top:60px;bottom:16px;z-index:60;width:315px;overflow:hidden;border-radius:14px;background:rgba(5,8,14,.90);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);color:#fff;box-shadow:0 10px 34px rgba(0,0,0,.32);transition:transform .22s ease,opacity .22s ease}
+#panel.collapsed{transform:translateX(calc(100% + 18px));opacity:0;pointer-events:none}
+#panelInner{height:100%;overflow:auto;padding:13px 14px;box-sizing:border-box}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.label{font-size:12px;font-weight:700}.val{font-size:12px;opacity:.78;min-width:92px;text-align:right}
+input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
+.weather-select{width:100%;box-sizing:border-box;margin:7px 0 10px;padding:9px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:#111722;color:#fff;font-size:12px}
+.small{font-size:10px;opacity:.54;margin-top:-6px;margin-bottom:8px;line-height:1.35}.section{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
+.buttons{display:flex;gap:7px;flex-wrap:wrap}button.action{border:0;border-radius:9px;padding:8px 10px;cursor:pointer;background:rgba(255,255,255,.11);color:#fff;border:1px solid rgba(255,255,255,.10);font-size:11px;font-weight:700}button.action.primary{background:#fff;color:#0b0f16}
+#distanceControl{display:flex;align-items:center;gap:8px}#distanceControl input[type=range]{flex:1;min-width:0;width:auto;margin:7px 0 12px}#distLock{flex:0 0 auto;min-width:38px;padding:7px 9px}#distLock.locked{background:#fff;color:#0b0f16}input[type=range]:disabled{opacity:.42;cursor:not-allowed}
+#shareUrl{width:100%;box-sizing:border-box;margin-top:8px;padding:8px 9px;border-radius:9px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:#dfe8f7;font:10px Consolas,monospace}
+#shareLink{display:block;margin-top:7px;color:#dfe8f7;font-size:10px;text-decoration:none;opacity:.82}#shareLink:hover{text-decoration:underline;opacity:1}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);z-index:90;padding:9px 13px;border-radius:10px;background:rgba(5,8,14,.88);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}#toast.show{opacity:1;transform:translate(-50%,0)}
+#axesCanvas{position:fixed;right:28px;bottom:88px;width:132px;height:132px;z-index:55;pointer-events:none;display:block;filter:drop-shadow(0 8px 18px rgba(0,0,0,.28));transition:right .22s ease}#axesCanvas.shifted{right:352px}
+
+#fps{position:fixed;right:18px;bottom:16px;z-index:40;color:rgba(255,255,255,.45);font:10px Consolas,monospace;pointer-events:none}
+@media(max-width:600px){#brand{top:49px;left:7px;max-width:calc(100vw - 32px);padding:5px 8px;border-color:rgba(80,240,255,.42);box-shadow:0 0 13px rgba(45,220,255,.18),inset 0 0 10px rgba(60,210,255,.07);font-size:13px;letter-spacing:.2px}#subtitle,#contact{display:none}}
+@media(max-width:600px){#brand.expanded #subtitle,#brand.expanded #contact{display:block}#help{max-width:calc(100vw - 30px);pointer-events:auto}}
+</style>
+<meta name="description" content="3XyzMedia RGB Bridge v22 — share/flight/audio corrections and optimized effects.">
+<style id="fxLabStyle">
+#fxLab26{display:none;position:fixed;left:16px;bottom:96px;z-index:92;width:min(318px,calc(100vw - 32px));max-height:65vh;overflow:auto;background:rgba(5,11,25,.96);border:1px solid #37d6ff;border-radius:14px;padding:12px;color:#e9f9ff;font:12px Arial,sans-serif;box-shadow:0 0 24px rgba(24,189,255,.35);box-sizing:border-box}
+#fxLab26 .fxrow{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}#fxLab26 button{background:#142e47;border:1px solid #3c97c5;border-radius:7px;color:#e8fbff;padding:7px;cursor:pointer;font-size:11px}#fxLab26 button.sel{background:#00bcf0;color:#001522}#fxLab26 input[type=range]{width:100%;accent-color:#24d3ef}#fxLab26 .fxmuted{color:#91b6ca;font-size:10px;line-height:1.4}#fxLab26 strong{color:#65ffed}
+#fxLab26 .fxhead{display:flex;justify-content:space-between;align-items:center;gap:12px}#fxLab26 #fxHide26{font-size:19px;line-height:1;width:30px;height:30px;padding:0}
+#fxShow26,#fxGuestPlay27{position:fixed;left:105px;bottom:16px;z-index:92;height:32px;border-radius:9px;padding:0 10px;background:rgba(5,20,32,.92);color:#80f7ff;border:1px solid #26caed;box-shadow:0 0 14px rgba(0,230,255,.22);font-weight:bold;cursor:pointer}
+#fxGuestPlay27{display:block;left:59px;border-color:#84ffd5;color:#afffe3}
+@media(max-width:600px){#fxLab26{left:7px;bottom:57px;max-height:58vh;overflow:auto;padding:9px}#fxShow26{left:98px;bottom:16px;height:32px}#fxGuestPlay27{left:48px;bottom:16px;height:32px}#panelToggle{top:49px!important;right:7px!important} }
+</style>
+</head>
+<body>
+<div id="pano"></div><aside id="fxLab26" aria-label="Gaussian FX Laboratory">
+ <div class="fxhead"><strong>⚛ GAUSSIAN FX LAB v44 — IFRAME FIRE ANCHOR</strong><button id="fxHide26" title="Закрыть лабораторию" aria-label="Закрыть">×</button></div>
+ <div class="fxrow"><button data-fxmode="1" class="sel">💥 BURST</button><button data-fxmode="2">🌀 VORTEX</button><button data-fxmode="5">🌪 SPIRAL</button><button data-fxmode="6">🔥 FIRE</button><button data-fxmode="3">✨ UNVEIL</button><button data-fxmode="4">🌈 RAINBOW</button></div>
+ <label>Сила эффекта / огня <span id="fxPowerValue">1.0×</span><input id="fxPower26" type="range" min="0.2" max="3" step="0.1" value="1"></label>
+ <label>Радиус / размер области <span id="fxRadiusValue">100</span><input id="fxRadius26" type="range" min="1" max="1500" step="1" value="100"></label>
+ <label>Скорость эффекта <span id="fxSpeedValue27">1.00×</span><input id="fxSpeed27" type="range" min="0.25" max="4" step="0.05" value="1"></label>
+ <label>Высота пламени <span id="fxHeightValue34">1.00×</span><input id="fxHeight34" type="range" min="0" max="5" step="0.1" value="1"></label>
+ <label class="fxrow" style="align-items:center;gap:9px"><input id="fxScaleFire35" type="checkbox" style="width:17px;height:17px;accent-color:#48f3ff"> Масштабировать огонь с моделью</label>
+ <label class="fxrow" style="align-items:center;gap:9px"><input id="fx3D36" type="checkbox" style="width:17px;height:17px;accent-color:#ff9e50"> 🔥 Прикрепить 2D-пламя к модели (3D-hotspot)</label>
+ <div class="fxmuted">v44 — оригинальный Canvas-огонь работает внутри прозрачного iframe-hotspot в локальном (0,0,0). Координаты и масштаб вычисляет сам krpano. Никакой экранной проекции JS.</div>
+ <div class="fxrow"><button id="fxPlay26">▶ PLAY FX</button><button id="fxReset26">↺ RESTORE</button></div>
+ <div class="fxmuted" id="fxStatus26">Сцена LAB загружается…</div>
+ <div class="fxmuted">BURST — разлёт и сборка; VORTEX — закручивание; SPIRAL — плавный смерч с дуговой траекторией; 🔥 FIRE — оригинальное пламя v29, искры; UNVEIL — проявление от центра; RAINBOW — проявление с цветной волной. RESTORE возвращает исходную геометрию, не загружает сохранение.</div>
+</aside><button id="fxShow26" type="button">⚛ LAB</button><button id="fxGuestPlay27" type="button" title="Запустить выбранный автором эффект">✨ FX</button><canvas id="fireOverlay" aria-hidden="true"></canvas><canvas id="skyOverlay" aria-hidden="true"></canvas><canvas id="starsOverlay" aria-hidden="true"></canvas><canvas id="auroraOverlay" aria-hidden="true"></canvas><canvas id="snowOverlay" aria-hidden="true"></canvas><canvas id="fxOverlay" aria-hidden="true"></canvas><canvas id="rainRippleOverlay" aria-hidden="true"></canvas><canvas id="fireworksOverlay" aria-hidden="true"></canvas><canvas id="meteorOverlay" aria-hidden="true"></canvas><div id="surface"></div><canvas id="axesCanvas" width="132" height="132"></canvas>
+<div id="toolbar"><button class="tool" id="toolAxes" title="Показать / скрыть WORLD XYZ">XYZ</button><button class="tool play" id="toolPlay" title="Плавный круг камеры вокруг pivot">&#9654; PLAY</button><button class="tool" id="toolHome" title="Возврат к сохранённому виду">&#8962;</button><button class="tool" id="toolReset" title="Полный сброс">&#8635;</button><button class="tool" id="toolEffects" title="Общий выключатель всех визуальных эффектов" aria-pressed="true">FX ON</button><button class="tool" id="toolTour" title="Записанный маршрут камеры">🎬 TOUR</button><button class="tool" id="toolVideo" title="Показать плавающее видео">▣ VIDEO</button><button class="tool" id="toolMusic" title="MP3: музыка запускается касанием модели; нажми для паузы" aria-label="Музыка MP3, пауза выключена">&#9654;&#8260; MP3</button></div>
+<button id="brand" type="button" aria-expanded="false" title="Показать информацию о проекте">3XyzMedia RGB Bridge&#8482;<span id="subtitle">Каждый объект начинается с цвета&#8230;</span><span id="contact">Contact: &#128231; xyzmedia3@yandex.ru</span></button>
+<div id="help" class="hidden">1 палец / ЛКМ — вращение<br>2 пальца — zoom + перемещение · колесо — zoom<br>ПКМ/MMB — pan · Shift+ЛКМ — roll<br>PLAY — вращение · ⌂ — домой · ▶/Ⅱ MP3 — музыка<br>🎬 TOUR — пройти записанный маршрут · ▣ VIDEO — плавающее MP4<br>⚛ LAB — эффекты модели · ✨ FX — запустить выбранный автором эффект<br>⚙ — настройки · FX ON/OFF — экранные эффекты</div><button id="helpToggle" type="button" title="Показать подсказки" aria-expanded="false">i</button>
+<button id="panelToggle" title="Настройки">&#9881;</button>
+<div id="panel" class="collapsed"><div id="panelInner">
+  <div class="row"><span class="label">Camera distance</span><span class="val" id="distValue">1.00&times;</span></div>
+  <div id="distanceControl"><input id="dist" type="range" min="0" max="1000" step="1" value="570"><button class="action" id="distLock" type="button" title="Зафиксировать дистанцию" aria-pressed="false">&#128275;</button></div><div class="small">Дистанция: влево — дальше, вправо — ближе. Замок фиксирует дистанцию и отключает zoom.</div>
+  <div class="row"><span class="label">Splat size</span><span class="val" id="scaleValue">0.25&times;</span></div><input id="scale" type="range" min="0.01" max="1.00" step="0.01" value="0.25">
+  <div class="row"><span class="label">Screen minimum</span><span class="val" id="aaValue">0.30 px</span></div><input id="aa" type="range" min="0.00" max="2.00" step="0.05" value="0.30">
+  
+  <div class="section"><div class="row"><span class="label">PLAY speed</span><span class="val" id="speedValue">3.0&deg;/s</span></div><input id="speed" type="range" min="0.5" max="12" step="0.5" value="3">
+  <div class="small">PLAY вращает камеру вокруг pivot. Модель не перекручивается.</div></div>
+  <div class="section"><div class="row"><span class="label">World axes</span><span class="val" id="axesValue">ON</span></div><div class="buttons"><button class="action primary" id="axesToggle2">XYZ: ON</button></div><div class="small">Гизмо показывает мировые X/Y/Z (Z к зрителю).</div></div>
+<div class="section"><div class="row"><span class="label">Up axis (к зрителю)</span><span class="val" id="upAxisValue">Z (AutoCAD)</span></div><div class="buttons"><button class="action primary" id="upZ" title="AutoCAD: Z к зрителю">Z&#8593;</button><button class="action" id="upMinusZ" title="-Z к зрителю">-Z&#8593;</button><button class="action" id="upY" title="Y к зрителю">Y&#8593;</button><button class="action" id="upMinusY" title="-Y к зрителю">-Y&#8593;</button><button class="action" id="upX" title="X к зрителю">X&#8593;</button><button class="action" id="upMinusX" title="-X к зрителю">-X&#8593;</button></div><div class="small">Выберите ось, направленную к зрителю (&#8593;). Применяется сразу, вращение продолжается.</div></div>
+  <div class="section"><div class="buttons"><button class="action" id="sort">SORT: DISTANCE</button><button class="action" id="mode">MODE: PERSPECTIVE</button><button class="action" id="reset2">HOME</button></div></div>
+  <div class="section" id="performanceSection">
+    <div class="row"><span class="label">Производительность</span><span class="val" id="qualityValue">AUTO</span></div>
+    <div class="buttons"><button class="action primary" id="qualityAuto" type="button">AUTO</button><button class="action" id="qualityLow" type="button">Лёгкий режим</button><button class="action" id="qualityHigh" type="button">Полное качество</button></div>
+    <div class="small">AUTO снижает разрешение и число частиц на телефонах. Общая кнопка FX ON/OFF останавливает или возвращает все визуальные эффекты.</div>
+  </div>
+  <div class="section" id="weatherSection">
+    <div class="row"><span class="label">Погода</span><span class="val">экранный эффект</span></div>
+    <select id="weatherMode" class="weather-select" aria-label="Выбрать погоду">
+      <option value="off">Выключено</option>
+      <option value="snow">Снег</option>
+      <option value="rain">Дождь</option>
+      <option value="heavy">Сильный дождь</option>
+    </select>
+    <div class="small">В дождь автоматически появляются капли и расходящиеся круги, словно на поверхности луж.</div>
+    <div class="row"><span class="label">Интенсивность</span><span class="val" id="weatherIntensityValue">50%</span></div>
+    <input id="weatherIntensity" type="range" min="10" max="100" step="5" value="50">
+    <div class="row"><span class="label">Скорость</span><span class="val" id="weatherSpeedValue">1.00×</span></div>
+    <input id="weatherSpeed" type="range" min="0.5" max="3" step="0.25" value="1">
+    <div class="small">Эффект поверх экрана; координаты модели не меняются.</div>
+
+    <div class="section" style="margin-top:8px;padding-top:8px">
+      <div class="row"><span class="label">Небо и атмосфера</span><span class="val">экранный режим</span></div>
+      <select id="skyMode" class="weather-select" aria-label="Режим неба">
+        <option value="off">Без дополнительного неба</option>
+        <option value="day">Ясный день — солнце и кучевые облака</option>
+        <option value="sunset">Багровый закат</option><option value="flight" hidden>Полёт сквозь звёзды</option>
+      </select>
+      <div class="small">Полупрозрачный атмосферный слой поверх сцены. Можно выключить в любой момент; режим полёта создаёт ощущение движения вперёд через звёздное поле.</div>
+    </div>
+    <div class="section" style="margin-top:7px;padding-top:8px">
+      <div class="row"><span class="label">Полёт сквозь звёзды</span></div><button class="action" id="flightToggle" type="button">✦ Включить полёт</button><div class="row"><span class="label">Скорость полёта</span><span class="val" id="flightSpeedValue">1.0×</span></div><input id="flightSpeed" type="range" min="0.35" max="4" step="0.05" value="1"><div class="row"><span class="label">Звёзды в полёте</span><span class="val" id="flightCountValue">100%</span></div><input id="flightCount" type="range" min="100" max="300" step="10" value="100">
+      <label class="row" for="starsEnabled"><span class="label">Звёздное небо</span><input id="starsEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#9bc8ff"></label>
+      <label class="row" for="starClustersEnabled"><span class="label">Дополнение: яркие звёзды и скопления</span><input id="starClustersEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#9bc8ff"></label>
+      <div class="row"><span class="label">Количество звёзд</span><span class="val" id="starsDensityValue">75%</span></div>
+      <input id="starsDensity" type="range" min="10" max="100" step="5" value="75">
+      <div class="row"><span class="label">Яркость звёзд</span><span class="val" id="starsBrightnessValue">85%</span></div>
+      <input id="starsBrightness" type="range" min="10" max="100" step="5" value="85">
+      <div class="small">Больше дальних мелких звёзд, яркие звёзды мерцают. Количество и яркость регулируются отдельно.</div>
+    </div>
+    <div class="section" style="margin-top:7px;padding-top:8px">
+      <div class="row"><span class="label">☄️ Метеоритный дождь</span><span class="val">экранный эффект</span></div>
+      <label class="row" for="meteorEnabled"><span class="label">Включить метеоры</span><input id="meteorEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#8deaff"></label>
+      <div class="row"><span class="label">Интенсивность метеоров</span><span class="val" id="meteorIntensityValue">55%</span></div>
+      <input id="meteorIntensity" type="range" min="10" max="100" step="5" value="55">
+      <div class="row"><span class="label">Скорость пролёта</span><span class="val" id="meteorSpeedValue">100%</span></div>
+      <input id="meteorSpeed" type="range" min="50" max="200" step="10" value="100">
+      <div class="buttons" style="margin:7px 0 10px"><button class="action primary" id="meteorBurst">☄️ Несколько метеоров</button></div>
+      <div class="small">Метеоры разного размера с яркой головкой и длинным светящимся хвостом. Не зависят от вращения модели.</div>
+      <div style="display:none"><input id="cosmosEnabled" type="checkbox"><input id="cosmosStrength" type="range" value="135"><span id="cosmosValue">0%</span><button id="shuffleCosmos" type="button"></button></div>
+      <div class="row"><span class="label">Туман</span><span class="val" id="fogValue">0%</span></div>
+      <input id="fogIntensity" type="range" min="0" max="100" step="5" value="0">
+      <div class="row"><span class="label">Молнии и зарницы</span><span class="val">Canvas</span></div>
+      <select id="lightningMode" class="weather-select" aria-label="Режим молний">
+        <option value="off">Выключено</option><option value="rare">Редкие молнии</option><option value="storm">Гроза</option><option value="sheet">Зарницы — отсветы без молний</option>
+      </select>
+      <div id="sheetRateWrap"><div class="row"><span class="label">Частота зарниц</span><span class="val" id="sheetRateValue">50%</span></div><input id="sheetRate" type="range" min="10" max="100" step="5" value="50"><div class="small">Ползунок виден постоянно; действует в режиме «Зарницы — отсветы без молний».</div></div>
+      <label class="row" for="neonEnabled"><span class="label">NEON / киберсвечение</span><input id="neonEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label>
+      <div class="row"><span class="label">Сила неона</span><span class="val" id="neonValue">75%</span></div>
+      <input id="neonStrength" type="range" min="10" max="100" step="5" value="75">
+      <div class="small">Более яркие циановые, синие и пурпурные свечения с мягкими широкими ореолами; экранный эффект, не перекраска самих Gaussian splats.</div>
+      <div class="section" id="auroraSection">
+        <label class="row" for="auroraEnabled"><span class="label">🌌 Северное сияние</span><input id="auroraEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#61ffd2"></label>
+        <div class="row"><span class="label">Яркость сияния</span><span class="val" id="auroraIntensityValue">70%</span></div><div class="row"><span class="label">Цветные туманности</span><span class="val" id="auroraColorValue">0%</span></div><input id="auroraColor" type="range" min="0" max="100" step="5" value="0">
+        <input id="auroraIntensity" type="range" min="20" max="100" step="5" value="70">
+        <div class="small">Движущиеся зелёно-бирюзовые и фиолетовые занавеси с вертикальными лучами. Эффект независим от вращения модели.</div>
+      </div>
+    </div>
+    <div class="section" id="fireworksSection">
+      <label class="row" for="fireworksEnabled"><span class="label">🎆 Салют</span><input id="fireworksEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#ffb34d"></label>
+      <div class="row"><span class="label">Яркость и размер залпов</span><span class="val" id="fireworksIntensityValue">70%</span></div>
+      <input id="fireworksIntensity" type="range" min="20" max="100" step="5" value="70">
+      <div class="row"><span class="label">Частота запусков</span><span class="val" id="fireworksRateValue">45%</span></div>
+      <input id="fireworksRate" type="range" min="10" max="100" step="5" value="45">
+      <div class="buttons"><button class="action primary" id="fireworksLaunch">✦ Запустить залп</button></div>
+      <div class="small">Экранный фейерверк: ракеты со следом, разные разрывы, цветные искры и золотое мерцание. Не зависит от вращения модели; настройки сохраняются в ссылке.</div>
+    </div>
+    <div class="section" id="audioSection">
+      <div class="row"><span class="label">🎧 Звук и музыка</span><span class="val">отдельно от модели</span></div>
+      <label class="row" for="uiSoundsEnabled"><span class="label">Звуки касаний и управления</span><input id="uiSoundsEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label>
+      <div class="row"><span class="label">Громкость звуков</span><span class="val" id="uiSoundsVolumeValue">85%</span></div>
+      <input id="uiSoundsVolume" type="range" min="0" max="100" step="5" value="85">
+      <div class="small">Короткие мягкие звуки при касании, вращении и зуме. Первое нажатие включает аудио браузера.</div>
+      <label class="row" for="musicEnabled"><span class="label">Фоновая MP3-музыка</span><input id="musicEnabled" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label>
+      <div class="row"><span class="label">Громкость музыки</span><span class="val" id="musicVolumeValue">30%</span></div>
+      <input id="musicVolume" type="range" min="0" max="100" step="5" value="30">
+      <input id="musicUrl" class="weather-select" type="text" value="music/3.mp3" aria-label="Путь к MP3" placeholder="music/3.mp3 или URL">
+      <div class="buttons"><button class="action" id="applyMusicUrl">Применить MP3</button><button class="action" id="musicStop">■ Стоп</button></div>
+      <div class="small">Музыка сохраняется в ссылке. Автовоспроизведение со звуком зависит от разрешений браузера; кнопка ▶ MP3 всегда доступна на главном экране.</div>
+      <div class="small">Чтобы музыка работала у всех посетителей, положи свой MP3 в папку music репозитория и укажи путь выше. Автозапуск не принудительный: браузер ждёт нажатия пользователя. Звуки интерфейса генерируются локально, дополнительные файлы не нужны.</div>
+    </div>
+  </div>
+
+
+<div class="section" id="tourSection"><div class="row"><span class="label">🎬 CAMERA TOUR / маршрут</span><span class="val" id="tourCount">0 точек</span></div>
+<div class="small">Поставь камеру, нажми «+ точка», повтори. Плавный проход между точками. По умолчанию 5 секунд на отрезок.</div>
+<div class="buttons"><button class="action" id="tourAdd">+ Точка</button><button class="action" id="tourUndo" title="Удалить только последнюю записанную точку камеры">↶ Последнюю</button><button class="action primary" id="tourPlay">▶ TOUR</button><button class="action" id="tourStop">■ Стоп</button><button class="action" id="tourClear">Очистить</button></div>
+<div class="row" style="margin-top:8px"><span class="label">Секунд на отрезок</span><span class="val" id="tourSecondsValue">5 с</span></div><input id="tourSeconds" type="range" min="2" max="20" value="5" step="1">
+<div class="small" id="tourInfo">«Последнюю» — удалить последнюю записанную точку. Кнопка 🎬 TOUR доступна и получателю ссылки; длина ссылки растёт с количеством точек.</div></div>
+<div class="section" id="videoSection"><div class="row"><span class="label">🎞 Плавающее видео</span></div><input id="videoUrl" class="weather-select" type="text" value="video/demo.mp4" placeholder="video/demo.mp4 или прямая MP4-ссылка"><div class="buttons"><button class="action" id="videoOpen">▶ Видео</button><button class="action" id="videoClose">Скрыть</button></div><div class="small">Помести MP4 в папку video рядом с index.html, например video/demo.mp4, или укажи прямой URL. Кнопка VIDEO и путь передаются в ссылке.</div></div>
+<div class="section" style="display:none"><div class="row"><span class="label">✨ Показ модели</span></div><div class="buttons"><button class="action" id="modelReveal">◉ REVEAL</button></div><div class="small">Тестовое проявление через временное изменение размера splat; настоящий разлёт отдельных Gaussian требует возможностей движка krpano.</div></div>
+  <div class="section"><label class="row" for="shareFx27"><span class="label">Передавать ✨ выбранный эффект</span><input id="shareFx27" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareFxLab29"><span class="label">Передавать ⚛ панель эффектов модели</span><input id="shareFxLab29" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label><div class="small">Эффект: получатель запускает одну выбранную анимацию кнопкой ✨ FX. Панель: разрешает получателю открывать LAB, выбирать и настраивать все эффекты. Галочки независимы.</div></div>
+  <div class="section"><label class="row" for="shareTour"><span class="label">Передавать 🎬 TOUR получателю</span><input id="shareTour" type="checkbox" checked style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareVideo"><span class="label">Передавать ▣ VIDEO получателю</span><input id="shareVideo" type="checkbox" checked style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareSettings"><span class="label">Передавать панель ⚙️ получателю</span><input id="shareSettings" type="checkbox" checked style="width:18px;height:18px;accent-color:#48f3ff"></label><div class="small">Включено — получатель сможет менять эффекты. Выключено — панель настроек скрыта, остаются PLAY / возврат к сохранённому виду / MP3.</div><div class="buttons"><button class="action primary" id="saveView">&#128190; Сохранить вид</button><button class="action" id="loadView">&#8599; Открыть сохранённый</button><button class="action" id="copyLink">&#128279; Копировать ссылку</button><button class="action" id="clearView">&times; Удалить</button></div>
+  <input id="shareUrl" readonly value="" aria-label="Ссылка для шаринга"><a id="shareLink" href="#" target="_blank" rel="noopener">Открыть эту ссылку</a><div class="small">Ссылка сохраняет модель, ракурс, погоду, звёзды, метеоры, салют, звук и музыку.</div></div>
+</div></div>
+<div id="videoFloat" style="display:none;position:fixed;left:16px;bottom:100px;width:min(320px,75vw);z-index:85;background:#080e1b;border:2px solid #38ffdb;border-radius:13px;box-shadow:0 0 22px #18ffd877,0 0 50px #15aaff55;padding:7px;touch-action:none;box-sizing:border-box">
+<div id="videoDrag" style="color:#aefbe8;font-size:12px;cursor:move;user-select:none;padding:5px 5px 9px;touch-action:none">⠿ Перетаскивай окно за рамку · 3XyzMedia VIDEO <button id="videoX" type="button" style="float:right;background:#283143;color:white;border:0;border-radius:5px;cursor:pointer">✕</button></div>
+<video id="videoPlayer" controls playsinline webkit-playsinline disablepictureinpicture controlslist="nofullscreen noremoteplayback" style="width:100%;aspect-ratio:16/9;display:block;background:#000"></video><div id="videoMobileControls" style="display:none;gap:8px;align-items:center;padding:7px 4px 1px"><button id="videoMobilePlay" type="button" class="action">▶</button><input id="videoMobileSeek" aria-label="Перемотка видео" type="range" min="0" max="1000" step="1" value="0" style="min-width:0;flex:1;margin:0"><button id="videoMobileMute" type="button" class="action">🔊</button></div></div><div id="toast"></div><div id="fps">FPS &#8212;</div>
+<script src="krpano.js"></script>
+<script>
+// v20 performance manager: effects can be suspended without changing the model/view state.
+let effectsMasterEnabled = true;
+let qualityMode = 'auto';
+let effectsSnapshot = null;
+let flightSpeed=1,flightCount=100,auroraColor=0;
+let fxSavedFlight='off';
+const effectControlIds = ['weatherMode','weatherIntensity','weatherSpeed','skyMode','flightSpeed','flightCount','auroraColor','starsEnabled','starClustersEnabled','starsDensity','starsBrightness','auroraEnabled','auroraIntensity','cosmosEnabled','cosmosStrength','fogIntensity','lightningMode','sheetRate','neonEnabled','neonStrength','fireworksEnabled','fireworksIntensity','fireworksRate','meteorEnabled','meteorIntensity','meteorSpeed'];
+function captureEffects(){const out={};for(const id of effectControlIds){const el=document.getElementById(id);if(el)out[id]=el.type==='checkbox'?{checked:el.checked}:{value:el.value}}return out}
+function restoreEffects(data){if(!data)return;for(const [id,v] of Object.entries(data)){const el=document.getElementById(id);if(!el)continue;if('checked' in v)el.checked=v.checked;else el.value=v.value}}
+function setEffectControlsDisabled(disabled){for(const id of [...effectControlIds,'fireworksLaunch','meteorBurst','shuffleCosmos']){const el=document.getElementById(id);if(el)el.disabled=!!disabled}}
+function clearAllEffects(){
+  document.getElementById('weatherMode').value='off';document.getElementById('skyMode').value='off';
+  ['starsEnabled','starClustersEnabled','auroraEnabled','cosmosEnabled','neonEnabled','fireworksEnabled','meteorEnabled'].forEach(id=>{const e=document.getElementById(id);if(e)e.checked=false});
+  document.getElementById('fogIntensity').value='0';document.getElementById('lightningMode').value='off';
+  applyWeather('off',document.getElementById('weatherIntensity').value,document.getElementById('weatherSpeed').value);
+  applySky('off');applyRainRipples();applyStars(false,document.getElementById('starsBrightness').value,document.getElementById('starsDensity').value);
+  applyAurora(false,document.getElementById('auroraIntensity').value);applyVisualFx();applyFireworks();applyMeteor();
+  const ids=['skyOverlay','starsOverlay','auroraOverlay','snowOverlay','fxOverlay','rainRippleOverlay','fireworksOverlay','meteorOverlay'];for(const id of ids){const c=document.getElementById(id);if(c)c.style.display='none'}
+}
+function restoreAllEffects(){
+  restoreEffects(effectsSnapshot);
+  const rememberedSky=fxSavedFlight;
+  document.getElementById("skyMode").value=rememberedSky;
+  applyWeather(document.getElementById('weatherMode').value,document.getElementById('weatherIntensity').value,document.getElementById('weatherSpeed').value);
+  applySky(rememberedSky);syncFlightButton();applyRainRipples();
+  applyStars(document.getElementById('starsEnabled').checked,document.getElementById('starsBrightness').value,document.getElementById('starsDensity').value);
+  applyAurora(document.getElementById('auroraEnabled').checked,document.getElementById('auroraIntensity').value);setAuroraColor(document.getElementById('auroraColor').value);
+  applyVisualFx();applyFireworks();applyMeteor();
+}
+function syncFlightButton(){const b=document.getElementById('flightToggle');if(b)b.textContent=skyMode==='flight'?'✦ Выключить полёт':'✦ Включить полёт'}
+function setEffectsMaster(on){on=!!on;if(on===effectsMasterEnabled)return;effectsMasterEnabled=on;const b=document.getElementById('toolEffects');if(on){restoreAllEffects();setEffectControlsDisabled(false);b.textContent='FX ON';b.classList.remove('off');b.setAttribute('aria-pressed','true');syncFlightButton();showToast('Визуальные эффекты включены')}else{effectsSnapshot=captureEffects();fxSavedFlight=skyMode;clearAllEffects();setEffectControlsDisabled(true);b.textContent='FX OFF';b.classList.add('off');b.setAttribute('aria-pressed','false');syncFlightButton();showToast('Визуальные эффекты остановлены — режим экономии') }}
+function effectiveQuality(){return qualityMode==='auto'?(window.matchMedia('(max-width:700px)').matches?'low':'high'):qualityMode}
+let qualityReady=false;
+function applyQualityMode(mode){
+  qualityMode=['auto','low','high'].includes(mode)?mode:'auto';
+  const eff=effectiveQuality();document.getElementById('qualityValue').textContent=qualityMode.toUpperCase()+' / '+(eff==='low'?'ECO':'FULL');
+  for(const id of ['qualityAuto','qualityLow','qualityHigh'])document.getElementById(id).classList.toggle('primary',id===({auto:'qualityAuto',low:'qualityLow',high:'qualityHigh'}[qualityMode]));
+  document.body.dataset.quality=eff;
+  if(qualityReady&&effectsMasterEnabled){
+    applyWeather(weatherMode,weatherIntensity,weatherSpeed);if(skyMode!=='off')applySky(skyMode);
+    if(starsEnabled)applyStars(starsEnabled,starsBrightness,starsDensity);
+    if(auroraEnabled)applyAurora(auroraEnabled,auroraIntensity);
+    if(cosmosEnabled||fogIntensity>0||lightningMode!=='off'||neonEnabled)resizeFxCanvas();
+    if(fireworksEnabled)resizeFireworks();if(meteorEnabled)resizeMeteor();
+  }
+  showToast('Эффекты: '+(eff==='low'?'ECO · меньше частиц и пикселей':'FULL · максимум качества'));
+}
+</script><script>
+let k=null;
+
+// Сцена выбирается из ссылки.
+// Основной параметр — xml. Для совместимости принимаем и старый параметр scene.
+// Ссылки без обоих параметров по-прежнему открывают scene.xml.
+const initialParams = new URLSearchParams(location.search);
+const sceneXml = initialParams.get('xml') || initialParams.get('scene') || 'scene_fx_lab_v44.xml';
+
+// Screen-space weather, stars and meteors. Overlays leave model coordinates untouched.
+const snowCanvas = document.getElementById('snowOverlay');
+const snowCtx = snowCanvas.getContext('2d', { alpha: true });
+const starsCanvas = document.getElementById('starsOverlay');
+const starsCtx = starsCanvas.getContext('2d', { alpha: true });
+const auroraCanvas=document.getElementById('auroraOverlay');
+const auroraCtx=auroraCanvas.getContext('2d',{alpha:true});
+const fireCanvas=document.getElementById('fireOverlay');
+const fireCtx=fireCanvas.getContext('2d',{alpha:true});
+let weatherMode = 'off', weatherIntensity = 50, weatherSpeed = 1;
+let starsEnabled = false, starsBrightness = 85, starsDensity = 75, stars = [], starsFrame = 0, starClustersEnabled = false;
+let snowW = 0, snowH = 0, snowDpr = 1, snowParticles = [], snowFrame = 0, snowLastTime = 0;
+function resizeOverlayCanvas(canvas, ctx){
+  const autoMobile = window.matchMedia('(max-width: 700px)').matches; const dpr = Math.min(window.devicePixelRatio || 1, effectiveQuality()==='low'?.75:(autoMobile?1.2:1.65));
+  canvas.width = Math.round(window.innerWidth * dpr);
+  canvas.height = Math.round(window.innerHeight * dpr);
+  canvas.style.width = window.innerWidth + 'px'; canvas.style.height = window.innerHeight + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return {w:window.innerWidth,h:window.innerHeight,dpr};
+}
+function resizeAuroraCanvas(){
+  const autoMobile=window.matchMedia('(max-width: 700px)').matches;const dpr=Math.min(window.devicePixelRatio||1,effectiveQuality()==='low'?.65:(autoMobile?1.05:1.3));
+  auroraCanvas.width=Math.round(window.innerWidth*dpr);auroraCanvas.height=Math.round(window.innerHeight*dpr);
+  auroraCanvas.style.width=window.innerWidth+'px';auroraCanvas.style.height=window.innerHeight+'px';
+  auroraCtx.setTransform(dpr,0,0,dpr,0,0);
+}
+let auroraEnabled=false, auroraIntensity=70, auroraFrame=0;
+let auroraPreviousFrame=0;
+let fireFxActive=false, fireFxFrame=0, fireFxParticles=[], fireFxSparks=[], fireFxStart=0, fireFxDuration=0, fireFxStrength=1, fireFxSpeed=1, fireFxHeight=1, fireFxOpacity=0, fireFxScaleEnabled=false, fireFxCameraStart=200, fireFx3DEnabled=false;
+function resizeFireCanvas(){resizeOverlayCanvas(fireCanvas,fireCtx)}
+function spawnFireParticles(count){
+  const w=innerWidth,h=innerHeight,cx=w*0.5,baseY=h*0.78,spread=Math.min(w*0.22,150+fireFxStrength*55);
+  for(let i=0;i<count;i++){
+    const side=(Math.random()*2-1), x=cx+side*spread*(Math.random()*0.95), y=baseY+Math.random()*18;
+    fireFxParticles.push({x,y,vx:side*(0.04+Math.random()*0.22),vy:-(0.8+Math.random()*2.6)*fireFxHeight,life:28+Math.random()*28,max:28+Math.random()*28,size:(18+Math.random()*38)*(0.75+fireFxStrength*0.45),hue:18+Math.random()*32,wob:Math.random()*6.28318,swirl:(Math.random()*2-1)*(0.2+Math.random()*0.8)});
+  }
+}
+function spawnFireSparks(count){
+  const w=innerWidth,h=innerHeight,cx=w*0.5,baseY=h*0.76,spread=Math.min(w*0.18,120+fireFxStrength*48);
+  for(let i=0;i<count;i++){
+    const side=(Math.random()*2-1), x=cx+side*spread*Math.random(), y=baseY+Math.random()*10;
+    fireFxSparks.push({x,y,vx:side*(0.2+Math.random()*0.9),vy:-(1.5+Math.random()*4.6)*fireFxHeight,life:30+Math.random()*45,max:30+Math.random()*45,size:1+Math.random()*2.4,wob:Math.random()*6.28318});
+  }
+}
+function startFireFx(strength=1,speed=1,height=1,duration=5200){
+  fireFxActive=true;fireFxStrength=Math.max(0.2,Number(strength)||1);fireFxSpeed=Math.max(0.25,Number(speed)||1);fireFxHeight=Math.max(0,Math.min(5,Number(height)));fireFxScaleEnabled=!!document.getElementById('fxScaleFire35').checked;fireFx3DEnabled=!!document.getElementById('fx3D36').checked;fireFxCameraStart=Math.max(0.00001,(typeof distance==='number'?distance:200));fireFxDuration=Math.max(800,Number(duration)||5200);fireFxStart=performance.now();fireFxOpacity=0;if(fireFx3DEnabled){xyzFire39Stop();stopFireFx(true);if(fireFxHeight>0)xyzFire44Start(fireFxDuration,fireFxStrength,fireFxHeight);return;}xyzFire44Stop();xyzFire39Stop();if(fireFxHeight===0){stopFireFx(true);return;}resizeFireCanvas();fireCanvas.style.display='block';
+  if(!fireFxFrame) fireFxFrame=requestAnimationFrame(drawFireFx);
+}
+function stopFireFx(force=false){
+  fireFxActive=false; if(force){fireFxOpacity=0;fireFxParticles=[];fireFxSparks=[];if(fireFxFrame)cancelAnimationFrame(fireFxFrame);fireFxFrame=0;fireCtx.clearRect(0,0,fireCanvas.width,fireCanvas.height);fireCanvas.style.display='none';}
+}
+
+// Project the *model-space* local origin, not the camera orbit pivot.
+// Camera pivot and pan move the camera target; the model origin stays in PLY space.
+// Rotation of the model about local (0,0,0) does not change the anchor location.
+// This is a screen-space billboard with a real world projection, not a depth-aware 3D volume.
+function projectFireAnchor36(){
+  if(!k) return null;
+  // v43: use documented krpano actions for space->sphere->screen conversion.
+  // This should be more reliable than reading stagex/stagey from the hotspot DOM wrapper.
+  try{
+    const base=xyzFire40Base();
+    k.set('fire_tmp_x', base.x);
+    k.set('fire_tmp_y', base.y);
+    k.set('fire_tmp_z', base.z);
+    k.call('spacetosphere(fire_tmp_x,fire_tmp_y,fire_tmp_z, fire_tmp_h,fire_tmp_v,fire_tmp_d); spheretoscreen(fire_tmp_h,fire_tmp_v, fire_tmp_sx,fire_tmp_sy);');
+    const sx=Number(k.get('fire_tmp_sx'));
+    const sy=Number(k.get('fire_tmp_sy'));
+    const d =Number(k.get('fire_tmp_d'));
+    if(Number.isFinite(sx) && Number.isFinite(sy) && sx>-100000 && sy>-100000){
+      const ref=Math.max(0.01, fireFxCameraStart || d || 1);
+      const dep=Math.max(0.01, d || distance || ref);
+      return {x:sx, y:sy, zoom:Math.max(.10,Math.min(12,ref/dep))};
+    }
+  }catch(e){}
+  // fallback only if actions fail
+  try{
+    if(typeof cameraState!=='function') return null;
+    const c=cameraState(),base=xyzFire40Base();
+    const diff={x:base.x-c.cam.x,y:base.y-c.cam.y,z:base.z-c.cam.z};
+    const depth=dot(diff,c.f); if(!Number.isFinite(depth)||depth<=0.01) return null;
+    const focal=innerHeight/(2*Math.tan((Number(k.get('view.fov'))||70)*Math.PI/360));
+    return {x:innerWidth*.5+dot(diff,c.right)*focal/depth,y:innerHeight*.5-dot(diff,c.up)*focal/depth,zoom:Math.max(.10,Math.min(12,fireFxCameraStart/depth))};
+  }catch(e){ return null; }
+}
+
+function drawFireFx(now){
+  fireFxFrame=0; const w=innerWidth,h=innerHeight; fireCtx.clearRect(0,0,w,h);
+  const elapsed=(now-fireFxStart); let envelope=0;
+  if(fireFxActive){ const p=Math.min(1,elapsed/fireFxDuration); envelope=Math.sin(Math.PI*p); if(p>=1) fireFxActive=false; }
+  fireFxOpacity += ((fireFxActive?Math.max(0.15,envelope):0)-fireFxOpacity)*0.12;
+  if(!fireFxActive && fireFxOpacity<0.02){fireFxParticles=[];fireFxSparks=[];fireCtx.clearRect(0,0,w,h);fireCanvas.style.display='none';return;}
+  fireCanvas.style.display='block';
+  // Optional approximation: scale screen-space fire about its base using camera distance.
+  // Original v34 pixels are unchanged with checkbox OFF.
+  // v36: optional world-anchored billboard projection. Preserve v35 unchanged when OFF.
+  let zoomFactor=fireFxScaleEnabled?Math.max(0.2,Math.min(8,fireFxCameraStart/Math.max(0.00001,typeof distance==='number'?distance:fireFxCameraStart))):1;
+  let fireCenterX=w*.5, fireCenterY=h*.78;
+  if(fireFx3DEnabled){
+    const projected=projectFireAnchor36();
+    if(projected){fireCenterX=projected.x;fireCenterY=projected.y;zoomFactor=projected.zoom;}
+    else{fireCenterX=-w*5;fireCenterY=-h*5;zoomFactor=0.2;}
+  }
+  fireCtx.save();fireCtx.translate(fireCenterX,fireCenterY);fireCtx.scale(zoomFactor,zoomFactor);fireCtx.translate(-w*.5,-h*.78);
+  const strength=(0.5+fireFxStrength*0.6)*Math.max(0.2,fireFxOpacity);
+  if(fireFxActive)spawnFireParticles(Math.max(2, Math.round((effectiveQuality()==='low'?4:8)*strength)));
+  if(fireFxActive && Math.random() < 0.9) spawnFireSparks(Math.max(1, Math.round((effectiveQuality()==='low'?2:5)*strength)));
+  fireCtx.globalCompositeOperation='source-over';
+  // no dark overlay: retain transparent fire canvas
+  fireCtx.globalCompositeOperation='lighter';
+  for(let i=fireFxParticles.length-1;i>=0;i--){
+    const p=fireFxParticles[i]; p.life-=1; if(p.life<=0){fireFxParticles.splice(i,1); continue}
+    const age=1-p.life/p.max; p.wob+=0.08*fireFxSpeed; p.vx += Math.sin(p.wob)*0.014*p.swirl; p.x += p.vx; p.y += p.vy*(0.8+age*0.8); const a=(p.life/p.max)*0.34*fireFxOpacity; const r=p.size*(0.35+0.65*(p.life/p.max));
+    const g=fireCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+    g.addColorStop(0,'rgba(255,255,220,'+(a*0.85)+')');
+    g.addColorStop(0.18,'rgba(255,'+(180+Math.round(Math.random()*50))+',70,'+(a)+')');
+    g.addColorStop(0.42,'rgba(255,'+(70+Math.round(Math.random()*60))+',25,'+(a*0.82)+')');
+    g.addColorStop(0.74,'rgba(220,30,10,'+(a*0.38)+')');
+    g.addColorStop(1,'rgba(60,0,0,0)');
+    fireCtx.fillStyle=g; fireCtx.beginPath(); fireCtx.arc(p.x,p.y,r,0,Math.PI*2); fireCtx.fill();
+  }
+  for(let i=fireFxSparks.length-1;i>=0;i--){
+    const s=fireFxSparks[i]; s.life-=1; if(s.life<=0){fireFxSparks.splice(i,1); continue}
+    const age=1-s.life/s.max; s.wob+=0.14; s.x += s.vx + Math.sin(s.wob)*0.35; s.y += s.vy + age*0.35;
+    const a=(s.life/s.max)*0.95*fireFxOpacity; fireCtx.fillStyle='rgba(255,'+(180+Math.round(50*Math.random()))+','+(80+Math.round(80*Math.random()))+','+a.toFixed(3)+')'; fireCtx.beginPath(); fireCtx.arc(s.x,s.y,s.size*(1-age*0.4),0,Math.PI*2); fireCtx.fill();
+  }
+  fireCtx.globalCompositeOperation='source-over';
+  fireCtx.restore();
+  fireFxFrame=requestAnimationFrame(drawFireFx);
+}
+
+function setAuroraColor(v){auroraColor=Math.max(0,Math.min(100,Number(v)||0));document.getElementById('auroraColor').value=auroraColor;document.getElementById('auroraColorValue').textContent=auroraColor+'%'}
+document.getElementById('auroraColor').addEventListener('input',e=>setAuroraColor(e.target.value));
+function drawAurora(now){
+ auroraFrame=0;if(!auroraEnabled)return;
+ const w=innerWidth,h=innerHeight,t=now/1000,a=auroraIntensity/100;
+ auroraCtx.clearRect(0,0,w,h);auroraCtx.globalCompositeOperation='screen';
+ // Only wide translucent Gaussian-like glows; no paths, contours or segmented rays.
+ for(let layer=0;layer<5;layer++){
+  const hue=[146,177,227,286,324][layer], x=w*(.15+layer*.17+.075*Math.sin(t*.12+layer)),y=h*(.13+.045*Math.cos(t*.18+layer));
+  const radius=Math.max(w*.30,h*.47),g=auroraCtx.createRadialGradient(x,y,0,x,y,radius);
+  const p=.78+.22*Math.sin(t*.39+layer*1.8),alpha=a*p*(layer<2?.19:.105);
+  g.addColorStop(0,`hsla(${hue},100%,65%,${alpha})`);
+  g.addColorStop(.30,`hsla(${hue},100%,56%,${alpha*.67})`);
+  g.addColorStop(.64,`hsla(${hue},100%,48%,${alpha*.20})`);
+  g.addColorStop(1,`hsla(${hue},100%,48%,0)`);
+  auroraCtx.fillStyle=g;auroraCtx.fillRect(x-radius,y-radius,radius*2,radius*2);
+ }
+ auroraCtx.globalCompositeOperation='source-over';
+ if(auroraColor>0){const power=auroraColor/100;const colors=[[255,28,87],[60,110,255],[176,50,255],[0,220,225],[255,60,165]];for(let i=0;i<colors.length;i++){const c=colors[i],x=w*(.13+i*.19)+Math.sin(t*.09+i)*w*.05,y=h*(.20+.06*Math.sin(i*2+t*.13)),rad=Math.max(w*.28,h*.32);const g=auroraCtx.createRadialGradient(x,y,0,x,y,rad);g.addColorStop(0,`rgba(${c[0]},${c[1]},${c[2]},${.16*power*a})`);g.addColorStop(.5,`rgba(${c[0]},${c[1]},${c[2]},${.065*power*a})`);g.addColorStop(1,'rgba(0,0,0,0)');auroraCtx.fillStyle=g;auroraCtx.fillRect(x-rad,y-rad,rad*2,rad*2)}}
+  auroraFrame=requestAnimationFrame(drawAurora);
+}
+function applyAurora(enabled=auroraEnabled,intensity=auroraIntensity){
+  auroraEnabled=!!enabled;auroraIntensity=Math.max(20,Math.min(100,Number(intensity)||70));
+  const check=document.getElementById('auroraEnabled'),slider=document.getElementById('auroraIntensity'),value=document.getElementById('auroraIntensityValue');
+  if(check)check.checked=auroraEnabled;if(slider)slider.value=String(auroraIntensity);if(value)value.textContent=auroraIntensity+'%';
+  if(auroraFrame){cancelAnimationFrame(auroraFrame);auroraFrame=0;}
+  if(!auroraEnabled){auroraCanvas.style.display='none';auroraCtx.clearRect(0,0,window.innerWidth,window.innerHeight);return;}
+  resizeAuroraCanvas();auroraCanvas.style.display='block';auroraFrame=requestAnimationFrame(drawAurora);
+}
+function resizeSnowOverlay(){
+  const r=resizeOverlayCanvas(snowCanvas,snowCtx); snowW=r.w; snowH=r.h; snowDpr=r.dpr;
+}
+function resizeStarsOverlay(){
+  resizeOverlayCanvas(starsCanvas,starsCtx);
+  if(starsEnabled) makeStars();
+}
+function makeWeatherParticle(randomY = false){
+  const depth = 0.25 + Math.random() * 0.75;
+  return {
+    x: Math.random() * Math.max(1, snowW),
+    y: randomY ? Math.random() * Math.max(1, snowH) : -10 - Math.random() * 35,
+    r: 0.45 + depth * 1.65,
+    vy: (0.45 + depth * 1.65) * weatherSpeed,
+    vx: (Math.random() - 0.5) * 0.55,
+    drift: Math.random() * Math.PI * 2,
+    driftSpeed: 0.35 + Math.random() * 0.9,
+    alpha: 0.22 + depth * 0.63,
+    depth,
+    length: 7 + depth * 17,
+    rainLength: 5 + depth * 17,
+    rainWidth: 0.45 + depth * 0.75,
+    rainDrift: (Math.random() - 0.5) * 0.55,
+    rainAlpha: 0.12 + depth * 0.30
+  };
+}
+function drawScreenWeather(now){
+  if(weatherMode === 'off') return;
+  const dtSeconds = snowLastTime ? Math.min(0.05, Math.max(0, (now - snowLastTime) / 1000)) : 1/60;
+  const dt = dtSeconds * 60; snowLastTime = now;
+  snowCtx.clearRect(0, 0, snowW, snowH);
+  for(const p of snowParticles){
+    if(weatherMode === 'snow'){
+      p.y += p.vy * dt;
+      p.drift += 0.012 * p.driftSpeed * dt;
+      p.x += (p.vx + Math.sin(p.drift) * 0.38) * dt;
+      if(p.y > snowH + 30){ Object.assign(p, makeWeatherParticle(false)); p.y = -10; }
+      if(p.x < -25) p.x = snowW + 10; else if(p.x > snowW + 25) p.x = -10;
+      snowCtx.globalAlpha = p.alpha; snowCtx.fillStyle = '#ffffff';
+      snowCtx.beginPath(); snowCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2); snowCtx.fill();
+    } else {
+      // Rain varies in length, width, brightness and trajectory so it does not read as uniform stripes.
+      const heavy = weatherMode === 'heavy';
+      const fall = (2.5 + p.depth * (heavy ? 8.2 : 6.2)) * weatherSpeed;
+      const drift = (heavy ? 1.05 : 0.72) + p.rainDrift;
+      p.y += fall * dt; p.x += drift * dt;
+      if(p.y > snowH + p.rainLength + 10){ Object.assign(p, makeWeatherParticle(false)); p.y = -p.rainLength - Math.random()*40; p.x=Math.random()*snowW; }
+      if(p.x > snowW + 15) p.x = -10;
+      snowCtx.globalAlpha = Math.min(0.62, p.rainAlpha * (heavy ? 1.25 : 1));
+      snowCtx.strokeStyle = p.depth > 0.72 ? 'rgba(225,239,255,0.95)' : 'rgba(170,205,238,0.9)';
+      snowCtx.lineWidth = p.rainWidth * (heavy ? 1.15 : 0.82);
+      snowCtx.beginPath(); snowCtx.moveTo(p.x, p.y);
+      snowCtx.lineTo(p.x - drift * (p.rainLength / Math.max(2,fall)), p.y + p.rainLength);
+      snowCtx.stroke();
+      // Tiny soft highlight gives a few near drops a more liquid, glinting look.
+      if(p.depth > 0.84 && Math.random() > 0.72){ snowCtx.globalAlpha *= 0.45; snowCtx.fillStyle='#e8f4ff'; snowCtx.beginPath(); snowCtx.arc(p.x,p.y,0.55,0,Math.PI*2); snowCtx.fill(); }
+    }
+  }
+  snowCtx.globalAlpha = 1;
+  snowFrame = requestAnimationFrame(drawScreenWeather);
+}
+function applyWeather(mode, intensity, speed){
+  weatherMode = ['off','snow','rain','heavy'].includes(mode) ? mode : 'off';
+  weatherIntensity = Math.max(10, Math.min(100, Number(intensity) || 50));
+  weatherSpeed = Math.max(0.5, Math.min(3, Number(speed) || 1));
+  const modeEl = document.getElementById('weatherMode'), intensityEl = document.getElementById('weatherIntensity'), speedEl = document.getElementById('weatherSpeed');
+  if(modeEl) modeEl.value = weatherMode; if(intensityEl) intensityEl.value = String(weatherIntensity); if(speedEl) speedEl.value = String(weatherSpeed);
+  if(snowFrame) cancelAnimationFrame(snowFrame); snowFrame = 0;
+  if(weatherMode === 'off'){
+    snowCanvas.style.display = 'none'; snowCtx.clearRect(0, 0, snowW, snowH); return;
+  }
+  resizeSnowOverlay(); snowCanvas.style.display = 'block';
+  const mobile = window.matchMedia('(max-width: 700px)').matches; const cap = effectiveQuality()==='low' ? (mobile?100:180) : (mobile?450:850); const base = Math.min(cap, Math.max(100, Math.floor(snowW * snowH / (effectiveQuality()==='low'?4200:1900))));
+  const count = Math.max(60, Math.floor(base * weatherIntensity / 50));
+  snowParticles = Array.from({length: count}, () => makeWeatherParticle(true));
+  snowLastTime = 0; snowFrame = requestAnimationFrame(drawScreenWeather);
+}
+// v19: atmospheric sky presets, rain-impact rings and star-warp flight.
+const skyCanvas=document.getElementById('skyOverlay'), skyCtx=skyCanvas.getContext('2d',{alpha:true});
+const rippleCanvas=document.getElementById('rainRippleOverlay'), rippleCtx=rippleCanvas.getContext('2d',{alpha:true});
+let skyMode='off', skyFrame=0, skyLast=0, skyStars=[], skyClouds=[], ripples=[], rippleFrame=0, rippleLast=0, rippleSpawnAt=0;
+function resizeAtmosphere(){
+  const dpr=Math.min(effectiveQuality()==='low'?.7:1.5,window.devicePixelRatio||1), w=window.innerWidth,h=window.innerHeight;
+  for(const [c,x] of [[skyCanvas,skyCtx],[rippleCanvas,rippleCtx]]){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);c.style.width=w+'px';c.style.height=h+'px';x.setTransform(dpr,0,0,dpr,0,0)}
+  makeWarpStars(); makeSkyClouds();
+}
+function makeSkyClouds(){const w=window.innerWidth,h=window.innerHeight;skyClouds=Array.from({length:Math.max(7,Math.floor(w/150))},(_,i)=>({x:Math.random()*w,y:h*(.07+Math.random()*.43),scale:.45+Math.random()*1.15,alpha:.10+Math.random()*.17,speed:(Math.random()-.5)*.025,phase:Math.random()*6.28}))}
+function makeWarpStars(){const w=innerWidth,h=innerHeight;
+ const baseCount=Math.max(240,Math.min(1050,Math.floor(w*h/(effectiveQuality()==='low'?2300:1250))));
+ const count=Math.round(baseCount*flightCount/100);
+ skyStars=Array.from({length:count},()=>{const a=Math.random()*Math.PI*2,z=.08+Math.random()*.91;return {a,z,tw:Math.random()*6.28,sz:Math.random()}});
+}
+function drawPuffyCloud(ctx,x,y,scale,alpha,tint){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.fillStyle=tint.replace('ALPHA',alpha.toFixed(3));ctx.beginPath();ctx.ellipse(0,5,62,18,0,0,Math.PI*2);ctx.ellipse(-35,0,25,22,0,0,Math.PI*2);ctx.ellipse(-12,-12,31,32,0,0,Math.PI*2);ctx.ellipse(20,-5,37,27,0,0,Math.PI*2);ctx.ellipse(48,5,24,17,0,0,Math.PI*2);ctx.fill();ctx.restore()}
+function drawSky(now){skyFrame=0;if(skyMode==='off'){skyCanvas.style.display='none';skyCtx.clearRect(0,0,skyCanvas.width,skyCanvas.height);return}skyCanvas.style.display='block';const w=window.innerWidth,h=window.innerHeight;const dt=skyLast?Math.min(.05,(now-skyLast)/1000):.016;skyLast=now;skyCtx.clearRect(0,0,w,h);
+ if(skyMode==='day'){
+  const g=skyCtx.createLinearGradient(0,0,0,h*.85);g.addColorStop(0,'rgba(78,177,255,0.65)');g.addColorStop(.48,'rgba(144,219,255,0.38)');g.addColorStop(1,'rgba(235,248,255,0.11)');skyCtx.fillStyle=g;skyCtx.fillRect(0,0,w,h);
+  const sx=w*.82,sy=h*.16,rad=Math.min(48,w*.055);const halo=skyCtx.createRadialGradient(sx,sy,rad*.1,sx,sy,rad*2.8);halo.addColorStop(0,'rgba(255,248,205,.65)');halo.addColorStop(1,'rgba(255,238,170,0)');skyCtx.fillStyle=halo;skyCtx.beginPath();skyCtx.arc(sx,sy,rad*2.8,0,Math.PI*2);skyCtx.fill();skyCtx.fillStyle='rgba(255,251,229,.96)';skyCtx.beginPath();skyCtx.arc(sx,sy,rad*.53,0,Math.PI*2);skyCtx.fill();
+  for(const c of skyClouds){c.x+=c.speed*dt*60;if(c.x>w+140)c.x=-140;if(c.x<-140)c.x=w+140;drawPuffyCloud(skyCtx,c.x,c.y,c.scale,c.alpha,'rgba(255,255,255,ALPHA)')}
+ } else if(skyMode==='sunset'){
+  const g=skyCtx.createLinearGradient(0,0,0,h);g.addColorStop(0,'rgba(30,20,72,.28)');g.addColorStop(.34,'rgba(118,37,91,.25)');g.addColorStop(.62,'rgba(225,70,67,.22)');g.addColorStop(.82,'rgba(255,125,66,.16)');g.addColorStop(1,'rgba(32,20,58,.05)');skyCtx.fillStyle=g;skyCtx.fillRect(0,0,w,h);
+  const sx=w*.76,sy=h*.62,rad=Math.min(86,w*.11);const halo=skyCtx.createRadialGradient(sx,sy,rad*.2,sx,sy,rad*2.4);halo.addColorStop(0,'rgba(255,93,67,.25)');halo.addColorStop(1,'rgba(255,55,80,0)');skyCtx.fillStyle=halo;skyCtx.beginPath();skyCtx.arc(sx,sy,rad*2.4,0,Math.PI*2);skyCtx.fill();skyCtx.fillStyle='rgba(255,154,111,.045)';skyCtx.beginPath();skyCtx.arc(sx,sy,rad*.55,0,Math.PI*2);skyCtx.fill();
+  for(const c of skyClouds){c.x+=c.speed*dt*35;if(c.x>w+160)c.x=-160;drawPuffyCloud(skyCtx,c.x,c.y+h*.12,c.scale*1.05,c.alpha*.9,'rgba(93,39,75,ALPHA)')}
+  } else if(skyMode==='flight'){
+   const cx=w*.5,cy=h*.49,rx=w*.72,ry=h*.60;skyCtx.globalCompositeOperation='lighter';
+   for(const st of skyStars){
+    // Depth increases smoothly toward the viewer; no random jitter at the vanishing point.
+    st.z+=dt*(.055+.025*st.sz)*flightSpeed;
+    if(st.z>=1)st.z=.05+(st.z-1);
+    const k=st.z*st.z,rad=st.a;
+    const x=cx+Math.cos(rad)*rx*k,y=cy+Math.sin(rad)*ry*k;
+    const size=(.12+2.0*k)*(st.sz>.75?1.2:.76);
+    const sparkle=.78+.22*Math.sin(now*.0026+st.tw*3.1);
+    const alpha=Math.min(.97,(.15+.82*k)*sparkle);
+    const palette=['210,235,255','255,224,185','186,218,255','220,193,255','171,245,255','255,203,219'];
+    const hue=palette[Math.min(palette.length-1,Math.floor(st.sz*palette.length))];
+    skyCtx.fillStyle=`rgba(${hue},${alpha})`;
+    skyCtx.beginPath();skyCtx.arc(x,y,size,0,6.283185);skyCtx.fill();
+    if(k>.59 && st.sz>.82){skyCtx.strokeStyle=`rgba(${hue},${.13*sparkle*k})`;skyCtx.lineWidth=.65;const ray=2.2+size*1.45;skyCtx.beginPath();skyCtx.moveTo(x-ray,y);skyCtx.lineTo(x+ray,y);skyCtx.moveTo(x,y-ray);skyCtx.lineTo(x,y+ray);skyCtx.stroke();}
+   }
+   skyCtx.globalCompositeOperation='source-over';
+  }
+skyFrame=requestAnimationFrame(drawSky);
+}
+function applySky(mode){skyMode=['off','day','sunset','flight'].includes(mode)?mode:'off';const el=document.getElementById('skyMode');if(el)el.value=skyMode;const fb=document.getElementById('flightToggle');if(fb)fb.textContent=skyMode==='flight'?'✦ Выключить полёт':'✦ Включить полёт';if(skyFrame)cancelAnimationFrame(skyFrame);skyFrame=0;skyLast=0;if(skyMode==='off'){skyCanvas.style.display='none';skyCtx.clearRect(0,0,skyCanvas.width,skyCanvas.height)}else{resizeAtmosphere();skyCanvas.style.display='block';skyFrame=requestAnimationFrame(drawSky)} }
+function spawnRipple(){const w=window.innerWidth,h=window.innerHeight;ripples.push({x:Math.random()*w,y:h*(.12+Math.random()*.76),r:1,life:0,max:36+Math.random()*44,alpha:.2+Math.random()*.34,stretch:.45+Math.random()*.35})}
+function drawRainRipples(now){rippleFrame=0;const mode=weatherMode;if(mode!=='rain'&&mode!=='heavy'&&ripples.length===0){rippleCanvas.style.display='none';rippleCtx.clearRect(0,0,rippleCanvas.width,rippleCanvas.height);return}rippleCanvas.style.display='block';const w=window.innerWidth,h=window.innerHeight;const dt=rippleLast?Math.min(.05,(now-rippleLast)/1000):.016;rippleLast=now;rippleCtx.clearRect(0,0,w,h);if((mode==='rain'||mode==='heavy')&&now>=rippleSpawnAt){const n=mode==='heavy'?2:1;for(let i=0;i<n;i++)spawnRipple();rippleSpawnAt=now+(mode==='heavy'?90:180)+Math.random()*(mode==='heavy'?170:420)}const alive=[];for(const r of ripples){r.life+=dt*60;r.r+=(.45+r.stretch*.7)*dt*60;if(r.life>=r.max)continue;const fade=(1-r.life/r.max)*r.alpha;rippleCtx.lineWidth=.6+(1-r.life/r.max)*.9;rippleCtx.strokeStyle=`rgba(190,220,246,${fade})`;rippleCtx.beginPath();rippleCtx.ellipse(r.x,r.y,r.r,r.r*r.stretch,0,0,Math.PI*2);rippleCtx.stroke();if(r.life<r.max*.6){rippleCtx.strokeStyle=`rgba(235,245,255,${fade*.42})`;rippleCtx.lineWidth=.55;rippleCtx.beginPath();rippleCtx.ellipse(r.x,r.y,r.r*.62,r.r*r.stretch*.62,0,0,Math.PI*2);rippleCtx.stroke()}alive.push(r)}ripples=alive;if(mode==='rain'||mode==='heavy'||ripples.length)rippleFrame=requestAnimationFrame(drawRainRipples);else{rippleCanvas.style.display='none';rippleLast=0}}
+function applyRainRipples(){if(rippleFrame)cancelAnimationFrame(rippleFrame);rippleFrame=0;if(weatherMode==='rain'||weatherMode==='heavy'){resizeAtmosphere();rippleCanvas.style.display='block';rippleLast=0;rippleSpawnAt=performance.now()+80;rippleFrame=requestAnimationFrame(drawRainRipples)}else if(ripples.length){rippleFrame=requestAnimationFrame(drawRainRipples)}else{rippleCanvas.style.display='none';rippleCtx.clearRect(0,0,rippleCanvas.width,rippleCanvas.height)}}
+
+function makeStars(){
+  const w=window.innerWidth,h=window.innerHeight;
+  const count=Math.max(110,Math.min(effectiveQuality()==='low'?850:4600,Math.floor((w*h/(effectiveQuality()==='low'?1500:520))*(starsDensity/42))));
+  const rng=seededRandom(stellarSeed+19);const palette=['#ffffff','#d8f0ff','#8edbff','#63aaff','#c4a3ff','#ffb8e8','#ffd8a1','#a6ffe8','#ffe8b5','#ff8b91','#fff1a6'];
+  stars=Array.from({length:count},()=>{
+    const q=rng(),bright=q>.992,medium=q>.91;
+    return {x:rng()*w,y:rng()*h,r:bright?1.35+rng()*1.35:(medium?.62+rng()*.48:.12+rng()*.32),
+      base:bright?.86+rng()*.14:(medium?.52+rng()*.42:.28+rng()*.68),
+      phase:rng()*Math.PI*2,rate:.45+rng()*4.6,amplitude:.2+rng()*.8,
+      color:palette[Math.floor(rng()*palette.length)],bright};
+  });
+}
+let starsLastDraw=0;let starsDrawAt=0;function drawStars(now){
+  if(!starsEnabled)return;if(effectiveQuality()==='low'&&now-starsDrawAt<45){starsFrame=requestAnimationFrame(drawStars);return;}starsDrawAt=now;
+  if(effectiveQuality()==='low'&&starsLastDraw&&now-starsLastDraw<55){starsFrame=requestAnimationFrame(drawStars);return;}starsLastDraw=now;const w=window.innerWidth,h=window.innerHeight,t=now/1000,boost=starsBrightness/100;
+  starsCtx.clearRect(0,0,w,h);
+  for(const s of stars){
+    const wave=.5+.5*Math.sin(t*s.rate+s.phase);
+    const twinkle=.38+.62*(wave*s.amplitude+(1-s.amplitude)*.45);
+    const alpha=Math.max(.025,Math.min(1,s.base*twinkle*boost));
+    starsCtx.globalAlpha=alpha;starsCtx.fillStyle=s.color;
+    starsCtx.beginPath();starsCtx.arc(s.x,s.y,s.r,0,Math.PI*2);starsCtx.fill();
+    if(s.bright){
+      const pulse=.45+.55*wave;
+      starsCtx.globalAlpha=alpha*.8*pulse;starsCtx.strokeStyle=s.color;starsCtx.lineWidth=.8;
+      starsCtx.beginPath();starsCtx.moveTo(s.x-5.5*s.r,s.y);starsCtx.lineTo(s.x+5.5*s.r,s.y);starsCtx.moveTo(s.x,s.y-5.5*s.r);starsCtx.lineTo(s.x,s.y+5.5*s.r);starsCtx.stroke();
+      starsCtx.globalAlpha=alpha*.2*pulse;starsCtx.beginPath();starsCtx.arc(s.x,s.y,s.r*3.3,0,Math.PI*2);starsCtx.fill();
+    }
+  }
+  // Optional naturalistic star clusters: irregular distribution, mixed sizes and colors.
+  // Inspired by Hubble star fields and the Pleiades: a few loose groups, no constellation lines.
+  if(starClustersEnabled){
+    const crng=seededRandom(stellarSeed+773); const clusters=[
+      {x:.22,y:.32,rx:.105,ry:.13,n:46}, {x:.73,y:.24,rx:.075,ry:.10,n:30},
+      {x:.62,y:.70,rx:.13,ry:.105,n:38}, {x:.88,y:.78,rx:.06,ry:.085,n:18}
+    ];
+    starsCtx.save();starsCtx.globalCompositeOperation='screen';
+    for(const cl of clusters){
+      for(let i=0;i<cl.n;i++){
+        // Gaussian-like concentration near group centers with a sparse halo.
+        const u=(crng()+crng()+crng()-1.5)*1.18, v=(crng()+crng()+crng()-1.5)*1.18;
+        const x=(cl.x+u*cl.rx)*w,y=(cl.y+v*cl.ry)*h;
+        if(x<0||x>w||y<0||y>h)continue;
+        const q=crng(),r=q>.965?(.9+crng()*1.65):q>.72?(.42+crng()*.58):(.14+crng()*.32);
+        const colors=['#ffffff','#d9efff','#a8d8ff','#80baff','#ffe5c4'];
+        const color=colors[Math.floor(crng()*colors.length)],alpha=(.22+crng()*.64)*boost;
+        if(r>.85){
+          const halo=starsCtx.createRadialGradient(x,y,0,x,y,r*(4.8+crng()*3));
+          halo.addColorStop(0,'rgba(255,255,255,.92)');halo.addColorStop(.12,'rgba(230,244,255,.58)');halo.addColorStop(.42,color==='#ffe5c4'?'rgba(255,220,180,.16)':'rgba(135,195,255,.16)');halo.addColorStop(1,'rgba(120,175,255,0)');
+          starsCtx.globalAlpha=Math.min(.78,alpha);starsCtx.fillStyle=halo;starsCtx.beginPath();starsCtx.arc(x,y,r*6.5,0,Math.PI*2);starsCtx.fill();
+        }
+        starsCtx.globalAlpha=Math.min(1,alpha);starsCtx.fillStyle=color;starsCtx.beginPath();starsCtx.arc(x,y,r,0,Math.PI*2);starsCtx.fill();
+      }
+    }
+    // A handful of standout stars of varied sizes, scattered independently of the groups.
+    for(let i=0;i<9;i++){
+      const x=crng()*w,y=crng()*h,r=.75+Math.pow(crng(),2)*2.8;
+      const halo=starsCtx.createRadialGradient(x,y,0,x,y,r*7);halo.addColorStop(0,'rgba(255,255,255,.9)');halo.addColorStop(.18,'rgba(225,241,255,.48)');halo.addColorStop(1,'rgba(140,195,255,0)');
+      starsCtx.globalAlpha=.75*boost;starsCtx.fillStyle=halo;starsCtx.beginPath();starsCtx.arc(x,y,r*7,0,Math.PI*2);starsCtx.fill();
+      starsCtx.globalAlpha=.9*boost;starsCtx.fillStyle='#fff';starsCtx.beginPath();starsCtx.arc(x,y,r*.65,0,Math.PI*2);starsCtx.fill();
+    }
+    starsCtx.restore();
+  }
+  starsCtx.restore();starsCtx.globalAlpha=1;starsFrame=requestAnimationFrame(drawStars);
+}
+function applyStars(enabled, brightness, density){
+  const wasEnabled=starsEnabled,oldDensity=starsDensity;
+  starsEnabled=!!enabled;
+  starsBrightness=Math.max(10,Math.min(100,Number(brightness)||85));
+  if(density!==undefined)starsDensity=Math.max(10,Math.min(100,Number(density)||75));
+  const densityChanged=oldDensity!==starsDensity;
+  const check=document.getElementById('starsEnabled'),slider=document.getElementById('starsBrightness'),dens=document.getElementById('starsDensity');
+  if(check)check.checked=starsEnabled;if(slider)slider.value=String(starsBrightness);if(dens)dens.value=String(starsDensity);
+  const value=document.getElementById('starsBrightnessValue'),dval=document.getElementById('starsDensityValue');if(value)value.textContent=starsBrightness+'%';if(dval)dval.textContent=starsDensity+'%';
+  if(starsFrame)cancelAnimationFrame(starsFrame);starsFrame=0;
+  if(!starsEnabled){starsCanvas.style.display='none';starsCtx.clearRect(0,0,starsCanvas.width,starsCanvas.height);return;}
+  resizeStarsOverlay();if(!wasEnabled||densityChanged||!stars.length)makeStars();
+  starsCanvas.style.display='block';starsFrame=requestAnimationFrame(drawStars);
+}
+function startScreenWeather(){applyWeather(weatherMode,weatherIntensity,weatherSpeed);applyStars(starsEnabled,starsBrightness);applyVisualFx();applyFireworks();}
+
+// Independent screen-space atmosphere: no KML/XML includes and no changes to model coordinates.
+const fxCanvas=document.getElementById('fxOverlay'), fxCtx=fxCanvas.getContext('2d',{alpha:true});
+let cosmosEnabled=false, cosmosStrength=135, fogIntensity=0, lightningMode='off', sheetRate=50, neonEnabled=false, neonStrength=75, stellarSeed=314159;
+let fxFrame=0, fxLast=0, nextLightningAt=0, lightningBolts=[], flashUntil=0, flashStartedAt=0, flashDuration=0, fogPhase=0, cosmosDust=[], cosmosClusters=[];
+function resizeFxCanvas(){const oldW=fxCanvas.width,oldH=fxCanvas.height;resizeOverlayCanvas(fxCanvas,fxCtx);if(oldW!==fxCanvas.width||oldH!==fxCanvas.height||!cosmosClusters.length)makeCosmosDust();}
+function seededRandom(seed){let x=(seed>>>0)||1;return function(){x=(x+0x6D2B79F5)>>>0;let t=x;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
+function makeCosmosDust(){
+  const w=window.innerWidth,h=window.innerHeight,rng=seededRandom(stellarSeed+71);
+  const count=Math.max(650,Math.min(2600,Math.floor(w*h/850)));
+  const palette=['#c9b6ff','#79dfff','#ffd0f3','#ffcf9e','#9effe6','#a8aaff','#ff727f','#fff2b0','#76a7ff','#ff9acb'];
+  cosmosDust=Array.from({length:count},()=>({x:rng()*w,y:rng()*h,r:.10+rng()*.28,a:.08+rng()*.42,c:palette[Math.floor(rng()*palette.length)]}));
+  // Galaxy catalogue: each object has its own morphology, tilt, curvature and brightness.
+  const specs=[
+    [.12,.20,.11,.030,'#8b6bff','spiral'],[.34,.15,.083,.022,'#39c9ff','edge'],[.58,.18,.105,.045,'#ff65c8','irregular'],[.84,.19,.12,.025,'#ffb36b','edge'],
+    [.20,.47,.095,.025,'#83ffe0','spiral'],[.47,.42,.12,.050,'#a9b5ff','irregular'],[.73,.45,.095,.021,'#ff8de1','edge'],[.91,.57,.065,.034,'#39c9ff','spiral'],
+    [.10,.76,.105,.026,'#ff65c8','edge'],[.38,.75,.115,.042,'#ffb36b','irregular'],[.65,.79,.10,.024,'#83ffe0','spiral'],[.86,.83,.08,.040,'#a9b5ff','irregular'],
+    [.53,.60,.065,.018,'#ff727f','edge'],[.29,.30,.052,.031,'#fff2b0','spiral'],[.62,.31,.060,.016,'#8ab9ff','edge'],[.42,.89,.065,.027,'#ff92d7','irregular'],
+    [.77,.67,.054,.014,'#b4ffe8','edge'],[.17,.60,.052,.020,'#ffc08a','spiral']
+  ];
+  cosmosClusters=specs.map(([nx,ny,rx,ry,color,morph],idx)=>{
+    const cx=w*nx,cy=h*ny,erx=w*rx,ery=h*ry,angle=(rng()-.5)*1.05;
+    const points=Array.from({length:190+Math.floor(rng()*210)},()=>{
+      let u,v;
+      if(morph==='edge'){u=(rng()+rng()+rng()-1.5)*1.05;v=(rng()+rng()-1)*.22;}
+      else if(morph==='spiral'){u=(rng()+rng()+rng()-1.5)*1.0;v=(rng()+rng()+rng()-1.5)*.52;}
+      else {u=(rng()+rng()+rng()-1.5)*1.16;v=(rng()+rng()+rng()-1.5)*.72;}
+      const ca=Math.cos(angle),sa=Math.sin(angle),x=u*erx,y=v*ery;
+      return {x:x*ca-y*sa,y:x*sa+y*ca,r:.07+rng()*.29,a:.12+rng()*.68,c:rng()<.70?color:palette[Math.floor(rng()*palette.length)],arm:rng()*Math.PI*2};
+    });
+    return {cx,cy,rx:erx,ry:ery,color,angle,points,seed:idx,morph,brightness:.45+rng()*.95,curve:(rng()-.5)*.65,twist:(rng()-.5)*.9};
+  });
+  // No decorative quasars or bright accretion rings. Keep only restrained distant astronomical silhouettes.
+  const kinds=['pulsar','sun','redDwarf','magnetar','blackHole','crab','pillar','milky','dustCloud'];
+  stellarObjects=Array.from({length:Math.max(20,Math.min(34,Math.floor(w/52)))},(_,i)=>({
+    x:w*(.025+rng()*.95),y:h*(.045+rng()*.91),kind:kinds[i%kinds.length],r:(i%9===4?8: i%9===1?3.2:1.5)+rng()*2.0,
+    color:palette[Math.floor(rng()*palette.length)],phase:rng()*Math.PI*2,angle:(rng()-.5)*1.15,variant:rng(),scale:.65+rng()*1.1,
+    dust:Array.from({length:230},()=>({u:rng()*2-1,v:rng()*2-1,c:palette[Math.floor(rng()*palette.length)],r:.25+rng()*.4,a:.05+rng()*.16}))
+  }));
+}
+let stellarObjects=[];
+function drawGalaxyCluster(g, strength, t){
+  const a=Math.min(2.25,strength/100),pulse=.94+.06*Math.sin(t*.19+g.cx*.008),bright=g.brightness;
+  fxCtx.save();fxCtx.translate(g.cx,g.cy);fxCtx.rotate(g.angle);fxCtx.globalCompositeOperation='screen';
+  // A restrained, elongated haze. Shape differs by galaxy morphology; no repeated spherical blobs.
+  const grad=fxCtx.createRadialGradient(0,0,0,0,0,g.rx);
+  grad.addColorStop(0,`rgba(255,255,255,${.035*a*pulse*bright})`);grad.addColorStop(.22,`rgba(190,175,255,${.035*a*bright})`);
+  grad.addColorStop(.58,`rgba(100,125,255,${.018*a})`);grad.addColorStop(1,'rgba(0,0,0,0)');
+  fxCtx.globalAlpha=Math.min(.8,.36*a*bright);fxCtx.fillStyle=grad;fxCtx.beginPath();fxCtx.ellipse(0,0,g.rx,g.rx,0,0,Math.PI*2);fxCtx.fill();fxCtx.restore();
+  // Fine dust lanes, with individually curved arms in spiral systems and ragged structure in irregular galaxies.
+  for(const p of g.points){
+    let px=p.x,py=p.y;
+    if(g.morph==='spiral'){
+      const rad=Math.sqrt((p.x/g.rx)**2+(p.y/Math.max(1,g.ry))**2),ang=Math.atan2(p.y/Math.max(1,g.ry),p.x/g.rx)+g.twist*rad;
+      const arm=Math.sin(ang*2.1+rad*7+g.curve)*.5;
+      px+=arm*g.rx*.13;py+=Math.cos(ang*2+rad*5)*g.ry*.12;
+    }else if(g.morph==='irregular'){
+      px+=Math.sin(p.y*.027+g.seed)*g.rx*.035;py+=Math.sin(p.x*.019+g.seed)*g.ry*.15;
+    }
+    const alpha=Math.min(.82,p.a*a*.62*bright);fxCtx.globalAlpha=alpha;fxCtx.fillStyle=p.c;fxCtx.beginPath();fxCtx.arc(g.cx+px,g.cy+py,p.r,0,Math.PI*2);fxCtx.fill();
+  }
+  radialGlow(g.cx,g.cy,Math.max(g.rx*.12,g.ry*.6),`rgba(255,255,255,${.018*a*pulse*bright})`,'rgba(0,0,0,0)');
+}
+function drawStellarObjects(w,h,t,strength){
+  const a=Math.min(2.1,strength/100);
+  for(const o of stellarObjects){const x=o.x,y=o.y,r=o.r*o.scale,pulse=.78+.22*Math.sin(t*1.5+o.phase);fxCtx.save();fxCtx.globalCompositeOperation='screen';
+    if(o.kind==='pulsar'||o.kind==='magnetar'){
+      radialGlow(x,y,r*6,`rgba(110,220,255,${.14*a*pulse})`,'rgba(0,0,0,0)');fxCtx.strokeStyle=o.kind==='magnetar'?'#ff8cf4':'#b6f7ff';fxCtx.globalAlpha=.45*a*pulse;fxCtx.lineWidth=.5;fxCtx.beginPath();fxCtx.moveTo(x-r*4,y);fxCtx.lineTo(x+r*4,y);fxCtx.moveTo(x,y-r*4);fxCtx.lineTo(x,y+r*4);fxCtx.stroke();
+    }else if(o.kind==='sun'){
+      radialGlow(x,y,r*7,`rgba(255,174,65,${.23*a*pulse})`,'rgba(0,0,0,0)');fxCtx.fillStyle='#fff0b0';fxCtx.globalAlpha=.9*a;fxCtx.beginPath();fxCtx.arc(x,y,r,0,Math.PI*2);fxCtx.fill();
+    }else if(o.kind==='redDwarf'){
+      radialGlow(x,y,r*5,`rgba(255,70,80,${.22*a*pulse})`,'rgba(0,0,0,0)');fxCtx.fillStyle='#ff786e';fxCtx.globalAlpha=.8*a;fxCtx.beginPath();fxCtx.arc(x,y,r*.72,0,Math.PI*2);fxCtx.fill();
+    }else if(o.kind==='blackHole'){
+      // A quiet dark gravitational silhouette, without the game-like glowing ring.
+      radialGlow(x,y,r*7,`rgba(92,105,155,${.10*a*pulse})`,'rgba(0,0,0,0)');fxCtx.globalCompositeOperation='source-over';fxCtx.fillStyle='rgba(0,0,5,.88)';fxCtx.beginPath();fxCtx.ellipse(x,y,r*1.45,r*.95,o.angle,0,Math.PI*2);fxCtx.fill();fxCtx.strokeStyle='rgba(150,170,220,.24)';fxCtx.lineWidth=.7;fxCtx.beginPath();fxCtx.ellipse(x,y,r*1.6,r*1.03,o.angle,0,Math.PI*2);fxCtx.stroke();
+    }else if(o.kind==='crab'){
+      // Crab-like supernova remnant: asymmetric blue/pink filaments rather than a flat ring.
+      radialGlow(x,y,r*9,`rgba(255,75,125,${.12*a*pulse})`,'rgba(0,0,0,0)');
+      for(let j=0;j<8;j++){const ang=j*Math.PI/4+o.angle,len=r*(2.4+o.variant*2.2);fxCtx.strokeStyle=j%2?'#ff9acb':'#8fdcff';fxCtx.globalAlpha=.28*a*pulse;fxCtx.lineWidth=.45;fxCtx.beginPath();fxCtx.moveTo(x+Math.cos(ang)*r*.35,y+Math.sin(ang)*r*.35);fxCtx.quadraticCurveTo(x+Math.cos(ang+.6)*len*.7,y+Math.sin(ang-.4)*len*.7,x+Math.cos(ang)*len,y+Math.sin(ang)*len);fxCtx.stroke();}
+    }else if(o.kind==='pillar'){
+      // Pillars of Creation: three irregular vertical columns made from colored dusty wisps.
+      const ph=o.phase;for(let j=0;j<3;j++){const px=x+(j-1)*r*1.55,top=y-r*(3.2+(j%2)*1.1),bottom=y+r*2.1;
+        for(let k=0;k<13;k++){const yy=top+(bottom-top)*k/12,wiggle=Math.sin(k*.78+ph+j)*r*.38;radialGlow(px+wiggle,yy,r*(.65+(k%3)*.22),`rgba(${j===1?'100,190,255':j===0?'255,105,180':'190,120,255'},${.07*a*pulse})`,'rgba(0,0,0,0)');}
+      }
+    }else if(o.kind==='milky'){
+      // Milky Way: an oblique band of countless fine colored grains with dark dust lanes.
+      fxCtx.translate(x,y);fxCtx.rotate(o.angle);const span=r*15,thick=r*3.6;
+      const ng=fxCtx.createLinearGradient(-span,-thick,span,thick);ng.addColorStop(0,'rgba(90,110,255,0)');ng.addColorStop(.35,`rgba(120,170,255,${.09*a})`);ng.addColorStop(.52,`rgba(255,210,235,${.12*a})`);ng.addColorStop(.7,`rgba(130,100,255,${.08*a})`);ng.addColorStop(1,'rgba(0,0,0,0)');fxCtx.fillStyle=ng;fxCtx.fillRect(-span,-thick,span*2,thick*2);
+      for(const d of o.dust){fxCtx.globalAlpha=d.a*a;fxCtx.fillStyle=d.c;fxCtx.fillRect(d.u*span,d.v*thick,d.r,d.r);}
+    }else if(o.kind==='dustCloud'){
+      // Loose diffuse colored nebula cloud with an irregular, non-circular outline.
+      for(let j=0;j<11;j++){const ang=j*2.399+o.phase,rr=r*(1.1+(j%4)*.7);radialGlow(x+Math.cos(ang)*rr,y+Math.sin(ang)*rr*.55,r*(2.2+(j%3)*.5),`rgba(${j%3===0?'255,100,180':j%3===1?'90,150,255':'170,100,255'},${.045*a*pulse})`,'rgba(0,0,0,0)');}
+    }
+    fxCtx.restore();
+  }
+}
+function makeBolt(w,h){
+  const x=w*(.12+Math.random()*.76), y=h*(.015+Math.random()*.20), pts=[{x,y}], branches=[];
+  let bx=x,by=y;const steps=12+Math.floor(Math.random()*12),targetX=x+(Math.random()-.5)*w*.48;
+  for(let i=0;i<steps;i++){
+    bx+=(targetX-bx)*.16+(Math.random()-.5)*w*.055;by+=h*(.025+Math.random()*.047);pts.push({x:bx,y:by});
+    if(i>2&&Math.random()<.16){let xx=bx,yy=by,bpts=[{x:xx,y:yy}],dir=Math.random()<.5?-1:1;for(let j=0;j<3+Math.floor(Math.random()*5);j++){xx+=dir*(w*.012+Math.random()*w*.032);yy+=h*(.015+Math.random()*.03);bpts.push({x:xx,y:yy});if(Math.random()<.2)dir*=-1;}branches.push(bpts);}
+    if(by>h*.92)break;
+  }
+  return {pts,branches,born:performance.now(),life:220+Math.random()*320,hue:Math.random()<.32?'#a9f4ff':'#f8fcff',flash:Math.random()};
+}
+function strokeBolt(points,alpha,width,color){if(points.length<2)return;fxCtx.globalAlpha=alpha;fxCtx.strokeStyle=color;fxCtx.lineWidth=width;fxCtx.lineJoin='round';fxCtx.lineCap='round';fxCtx.beginPath();fxCtx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)fxCtx.lineTo(points[i].x,points[i].y);fxCtx.stroke();}
+function radialGlow(x,y,r,inner,outer){const g=fxCtx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,inner);g.addColorStop(1,outer);fxCtx.fillStyle=g;fxCtx.fillRect(0,0,window.innerWidth,window.innerHeight);}
+function drawVisualFx(now){
+  const w=window.innerWidth,h=window.innerHeight,t=now/1000,dt=fxLast?Math.min(.05,(now-fxLast)/1000):1/60;fxLast=now;fxCtx.clearRect(0,0,w,h);
+  // COSMOS: distant colorful galaxies and star clusters; no foreground spiral overlay.
+  if(cosmosEnabled){
+    const a=cosmosStrength/100;fxCtx.globalCompositeOperation='screen';
+    const maxR=Math.max(w,h);
+    const clouds=[
+      {x:w*.25,y:h*.34,r:maxR*.54,c:`rgba(78,35,210,${.15*a})`},
+      {x:w*.72,y:h*.62,r:maxR*.50,c:`rgba(0,150,255,${.14*a})`},
+      {x:w*.48,y:h*.19,r:maxR*.38,c:`rgba(255,35,172,${.11*a})`},
+      {x:w*.84,y:h*.26,r:maxR*.30,c:`rgba(35,255,218,${.09*a})`},
+      {x:w*.13,y:h*.79,r:maxR*.32,c:`rgba(255,100,48,${.08*a})`}
+    ];
+    for(const n of clouds)radialGlow(n.x,n.y,n.r,n.c,'rgba(0,0,0,0)');
+    for(const g of cosmosClusters)drawGalaxyCluster(g,cosmosStrength,t);
+    for(const d of cosmosDust){fxCtx.globalAlpha=Math.min(.75,d.a*a);fxCtx.fillStyle=d.c;fxCtx.beginPath();fxCtx.arc(d.x,d.y,d.r,0,Math.PI*2);fxCtx.fill();}
+    drawStellarObjects(w,h,t,cosmosStrength);
+    fxCtx.globalAlpha=1;fxCtx.globalCompositeOperation='source-over';
+  }
+  // Fog: large low-frequency moving veils.
+  if(fogIntensity>0){
+    fogPhase+=dt*(.05+fogIntensity*.001);const a=fogIntensity/100;
+    const veils=[{x:((t*9)% (w*1.8))-w*.4,y:h*.42,r:Math.max(w*.62,h*.38),c:`rgba(165,195,225,${a*.14})`},{x:w-(((t*6)%(w*1.7))-w*.35),y:h*.7+Math.sin(fogPhase)*h*.04,r:Math.max(w*.7,h*.42),c:`rgba(128,155,205,${a*.13})`},{x:w*.45+Math.sin(fogPhase*.55)*w*.16,y:h*.28,r:Math.max(w*.5,h*.32),c:`rgba(200,215,235,${a*.08})`}];
+    for(const n of veils)radialGlow(n.x,n.y,n.r,n.c,'rgba(140,170,205,0)');
+  }
+  // NEON: highly saturated broad color fields and smooth glow, no repeated scanline texture.
+  if(neonEnabled){
+    const a=neonStrength/100,pulse=.78+.22*Math.sin(t*1.15);fxCtx.globalCompositeOperation='screen';
+    radialGlow(w*.12+Math.sin(t*.23)*w*.035,h*.30,Math.max(w,h)*.72,`rgba(0,255,255,${.46*a*pulse})`,'rgba(0,0,0,0)');
+    radialGlow(w*.86+Math.cos(t*.18)*w*.025,h*.72,Math.max(w,h)*.70,`rgba(255,0,238,${.47*a*pulse})`,'rgba(0,0,0,0)');
+    radialGlow(w*.53,h*.06,Math.max(w,h)*.38,`rgba(75,25,255,${.34*a})`,'rgba(0,0,0,0)');
+    // A few wide soft diagonal beams, rendered as translucent gradients.
+    for(let i=0;i<4;i++){const x=((t*(12+i*5)+i*w*.37)%(w*1.7))-w*.35;const g=fxCtx.createLinearGradient(x,0,x+w*.23,h);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.48,`rgba(${[0,255,255,255][i]},${[245,35,80,180][i]},${[255,220,255,90][i]},${.095*a})`);g.addColorStop(1,'rgba(0,0,0,0)');fxCtx.fillStyle=g;fxCtx.fillRect(0,0,w,h);}
+    fxCtx.globalCompositeOperation='source-over';fxCtx.globalAlpha=1;
+  }
+  // Lightning: short double flash, thick colored glow, bright core and branching forks.
+  if(lightningMode!=='off'){
+    if(now>=nextLightningAt){
+      if(lightningMode!=='sheet'){const first=makeBolt(w,h);lightningBolts.push(first);}
+      if(lightningMode==='storm'){
+        const volley=1+Math.floor(Math.random()*2);
+        if(lightningMode!=='sheet')for(let i=0;i<volley;i++){const bolt=makeBolt(w,h);bolt.born=now+55+i*(65+Math.random()*75);lightningBolts.push(bolt);}
+        flashStartedAt=now;flashDuration=360+Math.random()*360;flashUntil=flashStartedAt+flashDuration;
+        nextLightningAt=now+720+Math.random()*1550;
+      }else{
+        flashStartedAt=now;flashDuration=115;flashUntil=now+flashDuration;
+        nextLightningAt=now+(lightningMode==='sheet' ? (1800+(100-sheetRate)*65)+Math.random()*(1600+(100-sheetRate)*45) : 2400+Math.random()*5200);
+      }
+    }
+    const flashAge=now-flashStartedAt;
+    if(now<flashUntil){
+      const peak=lightningMode==='storm'?.17:.095;
+      const fade=Math.max(0,1-flashAge/Math.max(1,flashDuration));
+      const pulse=(lightningMode==='storm'?(Math.sin(flashAge*.045)>0?.9:0.35):1);
+      fxCtx.fillStyle=`rgba(218,237,255,${peak*fade*pulse})`;fxCtx.fillRect(0,0,w,h);
+    }
+    lightningBolts=lightningBolts.filter(b=>now-b.born<b.life);
+    if(lightningMode!=='sheet')for(const b of lightningBolts){const age=Math.max(0,(now-b.born)/b.life),alpha=Math.max(0,1-age);if(now-b.born<0)continue;strokeBolt(b.pts,alpha*.18,8,b.hue);strokeBolt(b.pts,alpha*.38,3.5,b.hue);strokeBolt(b.pts,alpha*.9,1.55,b.hue);strokeBolt(b.pts,alpha,.72,'#ffffff');for(const branch of b.branches){strokeBolt(branch,alpha*.35,2.8,b.hue);strokeBolt(branch,alpha*.9,.72,'#eafaff');}}
+  }
+  fxCtx.globalAlpha=1;fxCtx.globalCompositeOperation='source-over';fxFrame=requestAnimationFrame(drawVisualFx);
+}
+function applyVisualFx(){
+  const sheetWrap=document.getElementById('sheetRateWrap'); if(sheetWrap)sheetWrap.style.display='block';
+  cosmosEnabled=!!document.getElementById('cosmosEnabled')?.checked;
+  cosmosStrength=Math.max(10,Math.min(200,Number(document.getElementById('cosmosStrength')?.value)||135));
+  fogIntensity=Math.max(0,Math.min(100,Number(document.getElementById('fogIntensity')?.value)||0));
+  lightningMode=['off','rare','storm','sheet'].includes(document.getElementById('lightningMode')?.value)?document.getElementById('lightningMode').value:'off';
+  neonEnabled=!!document.getElementById('neonEnabled')?.checked;
+  neonStrength=Math.max(10,Math.min(100,Number(document.getElementById('neonStrength')?.value)||75));
+  const fv=document.getElementById('fogValue'),nv=document.getElementById('neonValue'),cv=document.getElementById('cosmosValue');if(fv)fv.textContent=fogIntensity+'%';if(nv)nv.textContent=neonStrength+'%';if(cv)cv.textContent=cosmosStrength+'%';
+  const active=cosmosEnabled||fogIntensity>0||lightningMode!=='off'||neonEnabled;
+  if(fxFrame)cancelAnimationFrame(fxFrame);fxFrame=0;
+  if(!active){fxCanvas.style.display='none';fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height);lightningBolts=[];return;}
+  resizeFxCanvas();fxCanvas.style.display='block';if(lightningMode==='off'){lightningBolts=[];flashUntil=0;}else if(!nextLightningAt)nextLightningAt=performance.now()+450;
+  fxFrame=requestAnimationFrame(drawVisualFx);
+}
+function setVisualFx(st={}){
+  if(Number.isFinite(Number(st.rs))&&Number(st.rs)>0){stellarSeed=Number(st.rs)>>>0;if(starsEnabled)makeStars();}
+  document.getElementById('cosmosEnabled').checked=false;
+  document.getElementById('cosmosStrength').value=String(st.cs===undefined?135:Math.min(200,st.cs));
+  document.getElementById('fogIntensity').value=String(st.fg===undefined?0:st.fg);
+  document.getElementById('lightningMode').value=['off','rare','storm','sheet'].includes(st.lm)?st.lm:'off';
+  document.getElementById('neonEnabled').checked=!!st.ne;
+  document.getElementById('neonStrength').value=String(st.nb===undefined?75:st.nb);
+  nextLightningAt=0;makeCosmosDust();applyVisualFx();
+}
+
+// Fireworks are a separate screen-space canvas: independent of model coordinates and rotation.
+const fwCanvas=document.getElementById('fireworksOverlay'), fwCtx=fwCanvas.getContext('2d',{alpha:true});
+let fireworksEnabled=false, fireworksIntensity=70, fireworksRate=45, fwFrame=0, fwLast=0, fwNextAt=0, fwRockets=[], fwParticles=[], fwLastLaunch=0;
+const fwPalette=['#fff7d6','#ffd36a','#ff9d45','#ff5c8a','#ff64d8','#b99bff','#7cecff','#8affc1','#ffffff'];
+function resizeFireworks(){resizeOverlayCanvas(fwCanvas,fwCtx)}
+function fwRand(a,b){return a+Math.random()*(b-a)}
+function launchFirework(x,y,manual=false){
+  const w=window.innerWidth,h=window.innerHeight;
+  x=x==null?fwRand(w*.12,w*.88):x; y=y==null?fwRand(h*.12,h*.55):y;
+  const startY=h+fwRand(10,h*.14), color=fwPalette[Math.floor(Math.random()*fwPalette.length)];
+  fwRockets.push({x,y:startY,tx:x,ty:y,v:fwRand(5.4,8.6),color,age:0,manual});
+  if(fwRockets.length>10)fwRockets.shift();
+}
+function burstFirework(x,y,color){
+  const level=fireworksIntensity/100;
+  const styles=['chrysanthemum','peony','ring','willow','palm'];
+  const style=styles[Math.floor(Math.random()*styles.length)];
+  const count=Math.round((style==='ring'?68:style==='willow'?95:82)*(.55+level*.72));
+  const base=fwPalette[Math.floor(Math.random()*fwPalette.length)];
+  for(let i=0;i<count;i++){
+    const angle=(Math.PI*2*i/count)+fwRand(-.025,.025);
+    let speed=style==='ring'?fwRand(2.2,3.8):style==='willow'?fwRand(1.0,3.4):fwRand(1.4,4.8);
+    if(style==='palm'&&i%5===0)speed*=1.3;
+    const hueColor=(Math.random()<.58?base:(Math.random()<.5?color:fwPalette[Math.floor(Math.random()*fwPalette.length)]));
+    fwParticles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:style==='willow'?fwRand(100,165):fwRand(55,105),age:0,color:hueColor,r:style==='willow'?fwRand(.65,1.45):fwRand(.7,1.8),gravity:style==='willow'?.035:.055,drag:style==='willow'?.986:.978,twinkle:Math.random()<.28,trail:style==='willow'||Math.random()<.28});
+  }
+  // A small secondary glitter ring gives the burst a fine, airy edge instead of a solid ball.
+  const glitter=Math.round(24+level*22);
+  for(let i=0;i<glitter;i++){const a=Math.random()*Math.PI*2,sp=fwRand(.6,2.2);fwParticles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:fwRand(65,125),age:0,color:Math.random()<.7?'#fff2bc':base,r:fwRand(.35,.85),gravity:.04,drag:.985,twinkle:true,trail:true});}
+  if(fwParticles.length>2600)fwParticles.splice(0,fwParticles.length-2600);
+}
+function drawFireworks(now){
+  const w=window.innerWidth,h=window.innerHeight,dt=fwLast?Math.min(2,(now-fwLast)/16.67):1;fwLast=now;
+  fwCtx.clearRect(0,0,w,h);fwCtx.globalCompositeOperation='lighter';
+  if(fireworksEnabled&&now>=fwNextAt){launchFirework();const base=2800-(fireworksRate*22);fwNextAt=now+base+Math.random()*Math.max(600,2400-fireworksRate*14)}
+  const nextR=[];
+  for(const r of fwRockets){r.age+=dt;const dx=r.tx-r.x,dy=r.ty-r.y,dist=Math.hypot(dx,dy);const step=Math.min(dist,r.v*dt*2.2);r.x+=dx/(dist||1)*step;r.y+=dy/(dist||1)*step;
+    fwCtx.globalAlpha=.9;fwCtx.strokeStyle=r.color;fwCtx.lineWidth=1.2;fwCtx.beginPath();fwCtx.moveTo(r.x,r.y+9);fwCtx.lineTo(r.x-dx/(dist||1)*9,r.y-dy/(dist||1)*9);fwCtx.stroke();fwCtx.fillStyle='#fff9df';fwCtx.beginPath();fwCtx.arc(r.x,r.y,1.7,0,Math.PI*2);fwCtx.fill();
+    if(dist<r.v*dt*2.6||r.age>95)burstFirework(r.tx,r.ty,r.color);else nextR.push(r);
+  }
+  fwRockets=nextR;
+  const alive=[];
+  for(const p of fwParticles){p.age+=dt;if(p.age>=p.life)continue;p.vx*=Math.pow(p.drag,dt);p.vy=p.vy*Math.pow(p.drag,dt)+p.gravity*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
+    const fade=Math.max(0,1-p.age/p.life),tw=p.twinkle?(.55+.45*Math.sin(p.age*.65)):1;fwCtx.globalAlpha=fade*tw*(fireworksIntensity/78);fwCtx.fillStyle=p.color;
+    if(p.trail){fwCtx.strokeStyle=p.color;fwCtx.lineWidth=Math.max(.35,p.r*.7);fwCtx.beginPath();fwCtx.moveTo(p.x-p.vx*1.9,p.y-p.vy*1.9);fwCtx.lineTo(p.x,p.y);fwCtx.stroke()}
+    fwCtx.beginPath();fwCtx.arc(p.x,p.y,p.r,0,Math.PI*2);fwCtx.fill();alive.push(p);
+  }
+  fwParticles=alive;fwCtx.globalAlpha=1;fwCtx.globalCompositeOperation='source-over';if(!fireworksEnabled&&fwParticles.length===0&&fwRockets.length===0){fwFrame=0;fwCanvas.style.display='none';fwCtx.clearRect(0,0,fwCanvas.width,fwCanvas.height);return;}fwFrame=requestAnimationFrame(drawFireworks);
+}
+function applyFireworks(){
+  fireworksEnabled=!!document.getElementById('fireworksEnabled').checked;
+  fireworksIntensity=Math.max(20,Math.min(100,Number(document.getElementById('fireworksIntensity').value)||70));
+  fireworksRate=Math.max(10,Math.min(100,Number(document.getElementById('fireworksRate').value)||45));
+  document.getElementById('fireworksIntensityValue').textContent=fireworksIntensity+'%';document.getElementById('fireworksRateValue').textContent=fireworksRate+'%';
+  if(fwFrame)cancelAnimationFrame(fwFrame);fwFrame=0;
+  if(!fireworksEnabled&&fwParticles.length===0&&fwRockets.length===0){fwCanvas.style.display='none';fwCtx.clearRect(0,0,fwCanvas.width,fwCanvas.height);return}
+  resizeFireworks();fwCanvas.style.display='block';if(fireworksEnabled&&!fwNextAt)fwNextAt=performance.now()+500;fwFrame=requestAnimationFrame(drawFireworks);
+}
+document.getElementById('fireworksEnabled').addEventListener('change',()=>{fwNextAt=performance.now()+250;applyFireworks()});
+document.getElementById('fireworksIntensity').addEventListener('input',applyFireworks);
+document.getElementById('fireworksRate').addEventListener('input',applyFireworks);
+document.getElementById('fireworksLaunch').addEventListener('click',()=>{resizeFireworks();fwCanvas.style.display='block';launchFirework(null,null,true);if(!fwFrame)fwFrame=requestAnimationFrame(drawFireworks);showToast('Салют запущен 🎆')});
+
+const BASE_DISTANCE=200;
+let pivot={x:0,y:0,z:0};
+let yaw=0, pitch=0, roll=0, distance=BASE_DISTANCE;
+let distanceLocked=false, sharedStartState=null, savedCameraState=null;
+let pan={x:0,y:0,z:0};
+let dragging=false, dragMode=null, startX=0,startY=0,startYaw=0,startPitch=0,startRoll=0,startPan={x:0,y:0,z:0},startRollAngle=0;
+let playOn=false,playAnim=0,playLast=0,playSpeedDeg=3,playAngle=0;
+let axesOn=true, sortIndex=0, perspective=true;
+let upAxis='Z';
+const upAxisRotations={'Z':{rx:0,ry:0,rz:180},'-Z':{rx:180,ry:0,rz:180},'Y':{rx:-90,ry:0,rz:0},'-Y':{rx:90,ry:0,rz:0},'X':{rx:0,ry:90,rz:0},'-X':{rx:0,ry:-90,rz:0}};
+const upAxisGizmo={'Z':{X:{x:1,y:0,z:0},Y:{x:0,y:1,z:0},Z:{x:0,y:0,z:1}},'-Z':{X:{x:1,y:0,z:0},Y:{x:0,y:-1,z:0},Z:{x:0,y:0,z:-1}},'Y':{X:{x:1,y:0,z:0},Y:{x:0,y:0,z:1},Z:{x:0,y:1,z:0}},'-Y':{X:{x:1,y:0,z:0},Y:{x:0,y:0,z:-1},Z:{x:0,y:-1,z:0}},'X':{X:{x:0,y:0,z:-1},Y:{x:0,y:1,z:0},Z:{x:1,y:0,z:0}},'-X':{X:{x:0,y:0,z:1},Y:{x:0,y:1,z:0},Z:{x:-1,y:0,z:0}}};
+function setUpAxis(axis){upAxis=axis;const rot=upAxisRotations[axis];if(k){k.set('image.splats.rx',rot.rx);k.set('image.splats.ry',rot.ry);k.set('image.splats.rz',rot.rz);k.call('view.update();display.splats.update();')}var displayText=axis==='Z'?'Z (AutoCAD)':axis+'\u2191';document.getElementById('upAxisValue').textContent=displayText;['upZ','upMinusZ','upY','upMinusY','upX','upMinusX'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('primary')});var btnId='up'+axis.replace('-','Minus');var btn=document.getElementById(btnId);if(btn)btn.classList.add('primary');stopPlay();playAngle=0;pan={x:0,y:0,z:0};yaw=0;pitch=0;roll=0;distEl.value=multiplierToSlider(distance/BASE_DISTANCE);applyDistance();showToast('Up axis: '+axis+'\u2191 \u2014 PLAY \u043a\u0440\u0443\u0442\u0438\u0442 \u0432\u043e\u043a\u0440\u0443\u0433 '+axis+' \u2713')}
+const surface=document.getElementById('surface'), axesCanvas=document.getElementById('axesCanvas'), ctx=axesCanvas.getContext('2d');
+const distEl=document.getElementById('dist'),scaleEl=document.getElementById('scale'),aaEl=document.getElementById('aa'),speedEl=document.getElementById('speed');
+const shareLinkEl=document.getElementById('shareLink');
+const sortModes=[['distance','SORT: DISTANCE'],['depth','SORT: DEPTH'],['accurate','SORT: ACCURATE'],['off','SORT: OFF']];
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function rad(d){return d*Math.PI/180} function deg(r){return r*180/Math.PI}
+function norm(v){const l=Math.hypot(v.x,v.y,v.z)||1;return{x:v.x/l,y:v.y/l,z:v.z/l}}
+function dot(a,b){return a.x*b.x+a.y*b.y+a.z*b.z}
+function cross(a,b){return{x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x}}
+function wrap360(v){v%=360;if(v<0)v+=360;return v}
+function sliderToMultiplier(v){const a=Math.log10(.005),b=Math.log10(100000);return Math.pow(10,a+((1000-v)/1000)*(b-a))}
+function multiplierToSlider(m){const a=Math.log10(.005),b=Math.log10(100000);return clamp(1000-((Math.log10(Math.max(.005,Math.min(100000,m)))-a)/(b-a))*1000,0,1000)}
+function cameraState(){
+  const sy=Math.sin(rad(yaw)), cy=Math.cos(rad(yaw)), cp=Math.cos(rad(pitch)), sp=Math.sin(rad(pitch));
+  const off={x:sy*cp*distance,y:sp*distance,z:cy*cp*distance};
+  const target={x:pivot.x+pan.x,y:pivot.y+pan.y,z:pivot.z+pan.z};
+  const cam={x:target.x+off.x,y:target.y+off.y,z:target.z+off.z};
+  const f=norm({x:target.x-cam.x,y:target.y-cam.y,z:target.z-cam.z});
+  let right=cross(f,{x:0,y:1,z:0});
+  if(Math.hypot(right.x,right.y,right.z)<1e-6){const s=Math.cos(rad(pitch))>=0?1:-1;right={x:s*Math.cos(rad(yaw)),y:0,z:-s*Math.sin(rad(yaw))}}
+  right=norm(right); const up=norm(cross(right,f));
+  const rr=rad(roll),cr=Math.cos(rr),sr=Math.sin(rr);
+  const rightR={x:right.x*cr+up.x*sr,y:right.y*cr+up.y*sr,z:right.z*cr+up.z*sr};
+  const upR={x:up.x*cr-right.x*sr,y:up.y*cr-right.y*sr,z:up.z*cr-right.z*sr};
+  return {target,cam,f,right:rightR,up:upR};
+}
+function updateView(){
+  if(!k)return; pitch=clamp(pitch,-179,179); yaw=wrap360(yaw);
+  const c=cameraState();
+  const h=deg(Math.atan2(c.f.x,c.f.z)),v=deg(Math.atan2(c.f.y,Math.hypot(c.f.x,c.f.z)));
+  k.set('view.tx',c.cam.x); k.set('view.ty',c.cam.y); k.set('view.tz',c.cam.z);
+  k.set('view.hlookat',h); k.set('view.vlookat',v); k.set('view.roll',roll); k.set('view.fov',70); k.call('view.update();');
+  drawAxes();
+}
+function applyDistance(){const m=sliderToMultiplier(Number(distEl.value));distance=BASE_DISTANCE*m;document.getElementById('distValue').textContent=(m<1?m.toFixed(4):m.toFixed(2))+'\u00d7';updateView()}
+function applyScale(){const v=Number(scaleEl.value);document.getElementById('scaleValue').textContent=v.toFixed(2)+'\u00d7';if(k)k.set('display.splats.scale',v)}
+function applyAA(){const v=Number(aaEl.value);document.getElementById('aaValue').textContent=v.toFixed(2)+' px';if(k)k.set('image.splats.antialias',v)}
+function applySort(){if(!k)return;const s=sortModes[sortIndex];k.set('display.splats.sortmode',s[0]);document.getElementById('sort').textContent=s[1]}
+function applyMode(){if(!k)return;k.set('display.splats.rendermode',perspective?'perspective':'standard');document.getElementById('mode').textContent=perspective?'MODE: PERSPECTIVE':'MODE: STANDARD'}
+function syncAxisUI(){
+  const label=upAxis==='Z'?'Z (AutoCAD)':upAxis+'↑';
+  document.getElementById('upAxisValue').textContent=label;
+  ['upZ','upMinusZ','upY','upMinusY','upX','upMinusX'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('primary')});
+  const btn=document.getElementById('up'+upAxis.replace('-','Minus'));if(btn)btn.classList.add('primary');
+}
+function applyAxisRotation(){const rot=upAxisRotations[upAxis]||upAxisRotations.Z;if(k){k.set('image.splats.rx',rot.rx);k.set('image.splats.ry',rot.ry);k.set('image.splats.rz',rot.rz);k.call('view.update();display.splats.update();')}}
+function toggleAxes(){axesOn=!axesOn;axesCanvas.style.display=axesOn?'block':'none';document.getElementById('toolAxes').classList.toggle('active',axesOn);document.getElementById('axesToggle2').textContent='XYZ: '+(axesOn?'ON':'OFF');document.getElementById('axesToggle2').classList.toggle('primary',axesOn);document.getElementById('axesValue').textContent=axesOn?'ON':'OFF';drawAxes()}
+function drawAxes(){if(!axesOn||!k)return; const c=cameraState(),w=132,h=132,cx=w/2,cy=h/2,L=40; ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='rgba(5,8,14,.64)';ctx.beginPath();ctx.arc(cx,cy,49,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.14)';ctx.stroke();
+  const g=upAxisGizmo[upAxis]||upAxisGizmo['Z'];const list=[['X',g.X,'#ff4747'],['Y',g.Y,'#55e477'],['Z',g.Z,'#4aa3ff']];
+  for(const [name,d,col] of list){const sx=dot(d,c.right), sy=-dot(d,c.up), ex=cx+sx*L, ey=cy+sy*L;ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);ctx.stroke();ctx.fillStyle=col;ctx.beginPath();ctx.arc(ex,ey,4,0,Math.PI*2);ctx.fill();ctx.font='bold 14px Arial';ctx.fillText(name,ex+6,ey+5)}
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.66)';ctx.font='9px Arial';ctx.fillText('WORLD',7,122);ctx.fillText('PIVOT',50,122);
+}
+function stopPlay(){if(playOn){playOn=false;cancelAnimationFrame(playAnim);document.getElementById('toolPlay').textContent='\u25b6 PLAY'}}
+function startPlay(){if(playOn)return;playOn=true;playLast=performance.now();document.getElementById('toolPlay').textContent='\u25a0 STOP';function tick(now){if(!playOn)return;const dt=Math.min(.05,(now-playLast)/1000);playLast=now;if(upAxis==='Z'||upAxis==='-Z'){playAngle+=playSpeedDeg*dt;const base=upAxisRotations[upAxis];k.set('image.splats.rz',base.rz+playAngle);k.call('display.splats.update();')}else if(upAxis==='X'||upAxis==='-X'){pitch=clamp(pitch+playSpeedDeg*dt,-179,179);updateView()}else{yaw=wrap360(yaw+playSpeedDeg*dt);updateView()}playAnim=requestAnimationFrame(tick)}playAnim=requestAnimationFrame(tick)}
+function screenRollAngle(x,y){const r=surface.getBoundingClientRect();return Math.atan2(y-(r.top+r.height/2),x-(r.left+r.width/2))}
+async function loadPivotFile(){try{const r=await fetch('model/pivot.json',{cache:'no-store'});if(r.ok){const j=await r.json();if([j.x,j.y,j.z].every(Number.isFinite))pivot={x:Number(j.x),y:Number(j.y),z:Number(j.z)}}}catch(e){} updatePivotUI()}
+function updatePivotUI(){var el=document.getElementById('pivotValue');if(!el)return;el.textContent=pivot.x.toFixed(2)+', '+pivot.y.toFixed(2)+', '+pivot.z.toFixed(2)}
+function setPivot(x,y,z){pivot={x:Number(x),y:Number(y),z:Number(z)};pan={x:0,y:0,z:0};updatePivotUI();updateView();if(k)k.set('control.locked','true');showToast('Pivot \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d \u2713')}
+function setPivotFromCursor(){return false}
+function captureCameraState(){return {p:[pivot.x,pivot.y,pivot.z],o:[yaw,pitch,roll],d:distance,m:[pan.x,pan.y,pan.z],u:upAxis}}
+function restoreCameraState(c){if(!c)return;stopPlay();playAngle=0;pivot={x:Number(c.p[0])||0,y:Number(c.p[1])||0,z:Number(c.p[2])||0};yaw=Number(c.o[0])||0;pitch=Number(c.o[1])||0;roll=Number(c.o[2])||0;distance=Number(c.d)||BASE_DISTANCE;pan={x:Number(c.m[0])||0,y:Number(c.m[1])||0,z:Number(c.m[2])||0};if(c.u&&upAxisRotations[c.u])upAxis=c.u;syncAxisUI();applyAxisRotation();distEl.value=multiplierToSlider(distance/BASE_DISTANCE);updatePivotUI();applyDistance();updateView();if(k)k.set('control.locked','true')}
+function resetCamera(){stopPlay();playAngle=0;if(savedCameraState){restoreCameraState(savedCameraState);startPlay();showToast('Возврат к сохранённому виду — PLAY продолжается ✓');return}if(sharedStartState){restoreCameraState({p:sharedStartState.p,o:sharedStartState.o,d:sharedStartState.d,m:sharedStartState.m,u:sharedStartState.u});startPlay();showToast('Исходный вид ссылки — PLAY продолжается ✓');return}startPlay();showToast('Сначала нажми «Сохранить вид» в настройках')}
+function resetAll(){
+  stopPlay();playAngle=0;
+  // Owner's browser remembers the factory view. A recipient without that local
+  // baseline returns to the exact view encoded in the shared URL instead.
+  let factory=null;try{const raw=localStorage.getItem('3XyzMedia_factory_view_v1');if(raw)factory=JSON.parse(raw)}catch(e){}
+  if(factory){setUpAxis('Z');applyState(factory);const base=upAxisRotations['Z'];if(k){k.set('image.splats.rx',base.rx);k.set('image.splats.ry',base.ry);k.set('image.splats.rz',base.rz);k.call('display.splats.update();');k.set('control.locked','true')}showShareUrl('');if(!playOn)startPlay();showToast('Первоначальный вид восстановлен — PLAY продолжается ✓');return}
+  if(sharedStartState){applyState(JSON.parse(JSON.stringify(sharedStartState)));const base=upAxisRotations[upAxis];if(k){k.set('image.splats.rx',base.rx);k.set('image.splats.ry',base.ry);k.set('image.splats.rz',base.rz);k.call('display.splats.update();');k.set('control.locked','true')}if(!playOn)startPlay();showToast('Исходный вид ссылки — PLAY продолжается ✓');return}
+  setUpAxis('Z');pivot={x:0,y:0,z:0};updatePivotUI();yaw=0;pitch=0;roll=0;pan={x:0,y:0,z:0};distance=BASE_DISTANCE;distEl.value=multiplierToSlider(1);scaleEl.value=.25;aaEl.value=.30;sortIndex=0;perspective=true;applyDistance();applyScale();applyAA();applySort();applyMode();showShareUrl('');if(!playOn)startPlay();showToast('Исходный вид восстановлен — PLAY продолжается ✓');
+}
+function state(){return {p:[pivot.x,pivot.y,pivot.z],o:[yaw,pitch,roll],d:distance,m:[pan.x,pan.y,pan.z],s:Number(scaleEl.value),a:Number(aaEl.value),q:sortIndex,r:perspective?1:0,u:upAxis,x:axesOn?1:0,b:playOn?1:0,w:playSpeedDeg,l:distanceLocked?1:0,wx:weatherMode,wi:weatherIntensity,ws:weatherSpeed,sk:skyMode,zt:starsEnabled?1:0,zb:starsBrightness,zd:starsDensity,cx:cosmosEnabled?1:0,cs:cosmosStrength,fg:fogIntensity,lm:lightningMode,sr:sheetRate,ne:neonEnabled?1:0,nb:neonStrength,rs:stellarSeed,au:auroraEnabled?1:0,ai:auroraIntensity,fw:fireworksEnabled?1:0,fi:fireworksIntensity,fr:fireworksRate,mt:document.getElementById('meteorEnabled').checked?1:0,mi:Number(document.getElementById('meteorIntensity').value),ms:Number(document.getElementById('meteorSpeed').value),ue:document.getElementById('uiSoundsEnabled').checked?1:0,uv:Number(document.getElementById('uiSoundsVolume').value),me:document.getElementById('musicEnabled').checked?1:0,mv:Number(document.getElementById('musicVolume').value),mp:document.getElementById('musicUrl').value.trim(),ma:musicAutoStart?1:0, qm:qualityMode,sc:starClustersEnabled?1:0, tour:(document.getElementById("shareTour").checked?tourPoints.map(p=>p.map(v=>Math.round(v*10000)/10000)):[]),ts:Number(document.getElementById("tourSeconds").value),vu:document.getElementById("shareVideo").checked?document.getElementById("videoUrl").value:"",vo:document.getElementById("shareVideo").checked&&videoBox.style.display!=="none"?1:0,fs:flightSpeed,fc:flightCount,ac:auroraColor,ef:document.getElementById("shareFx27").checked?1:0,em:window.xyzFX27?.mode??1,ep:Number(document.getElementById("fxPower26").value),er:Number(document.getElementById("fxRadius26").value),et:Number(document.getElementById("fxSpeed27").value),eh:Number(document.getElementById("fxHeight34").value),ez:document.getElementById("fxScaleFire35").checked?1:0,e3:document.getElementById("fx3D36").checked?1:0}}
+// Meteor shower v1: screen-space streaks independent of the model.
+const meteorCanvas=document.getElementById('meteorOverlay'), meteorCtx=meteorCanvas.getContext('2d',{alpha:true});
+let meteorEnabled=false, meteorParticles=[], meteorFrame=0, meteorLast=0, meteorIntensity=55, meteorSpeed=100, meteorNext=0;
+function resizeMeteor(){resizeOverlayCanvas(meteorCanvas,meteorCtx)}
+function spawnMeteor(force=false){const w=window.innerWidth,h=window.innerHeight;const angle=(Math.PI/180)*(22+Math.random()*36);const len=(35+Math.random()*120)*(0.55+meteorIntensity/100);const x=Math.random()*w*.95, y=-Math.random()*h*.15;const speed=(4+Math.random()*8)*meteorSpeed/100;const hue=[190,205,215,35,45,0][Math.floor(Math.random()*6)];meteorParticles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed+speed*.25,life:0,max:Math.max(18,len/(speed*.55)),len,hue,width:.7+Math.random()*1.8,glow:5+Math.random()*14});}
+function drawMeteors(now){meteorFrame=0;const dt=Math.min(2.5,(now-(meteorLast||now))/16.67);meteorLast=now;const w=window.innerWidth,h=window.innerHeight;meteorCtx.clearRect(0,0,w,h);if(meteorEnabled&&now>=meteorNext){spawnMeteor();if(meteorIntensity>65&&Math.random()<.35)spawnMeteor();meteorNext=now+Math.max(90,950-(meteorIntensity*8))+Math.random()*700;}
+ meteorCtx.globalCompositeOperation='lighter';const alive=[];for(const m of meteorParticles){m.x+=m.vx*dt;m.y+=m.vy*dt;m.life+=dt;if(m.life>m.max||m.x>w+200||m.y>h+200)continue;const fade=Math.min(1,m.life/3,Math.max(0,(m.max-m.life)/7));const tailX=m.x-m.vx*m.len/7,tailY=m.y-m.vy*m.len/7;const g=meteorCtx.createLinearGradient(m.x,m.y,tailX,tailY);g.addColorStop(0,`hsla(${m.hue},100%,95%,${fade})`);g.addColorStop(.15,`hsla(${m.hue},100%,75%,${fade*.7})`);g.addColorStop(1,`hsla(${m.hue},100%,60%,0)`);meteorCtx.strokeStyle=g;meteorCtx.lineWidth=m.width;meteorCtx.shadowColor=`hsl(${m.hue},100%,75%)`;meteorCtx.shadowBlur=m.glow;meteorCtx.beginPath();meteorCtx.moveTo(m.x,m.y);meteorCtx.lineTo(tailX,tailY);meteorCtx.stroke();meteorCtx.fillStyle=`rgba(255,255,255,${fade})`;meteorCtx.beginPath();meteorCtx.arc(m.x,m.y,1.1+m.width*.55,0,Math.PI*2);meteorCtx.fill();alive.push(m)}meteorParticles=alive;meteorCtx.shadowBlur=0;meteorCtx.globalCompositeOperation='source-over';if(meteorEnabled||meteorParticles.length){meteorFrame=requestAnimationFrame(drawMeteors)}else{meteorCanvas.style.display='none';meteorLast=0;meteorParticles=[];}}
+function applyMeteor(){meteorEnabled=!!document.getElementById('meteorEnabled').checked;meteorIntensity=Number(document.getElementById('meteorIntensity').value)||55;meteorSpeed=Number(document.getElementById('meteorSpeed').value)||100;document.getElementById('meteorIntensityValue').textContent=meteorIntensity+'%';document.getElementById('meteorSpeedValue').textContent=meteorSpeed+'%';if(meteorEnabled){resizeMeteor();meteorCanvas.style.display='block';if(!meteorFrame)meteorFrame=requestAnimationFrame(drawMeteors)}else if(meteorParticles.length){if(!meteorFrame)meteorFrame=requestAnimationFrame(drawMeteors)}else{meteorCanvas.style.display='none';if(meteorFrame)cancelAnimationFrame(meteorFrame);meteorFrame=0;meteorCtx.clearRect(0,0,meteorCanvas.width,meteorCanvas.height)}}
+document.getElementById('meteorEnabled').addEventListener('change',()=>{meteorNext=performance.now()+100;applyMeteor();uiTone('toggle',true)});document.getElementById('meteorIntensity').addEventListener('input',applyMeteor);document.getElementById('meteorSpeed').addEventListener('input',applyMeteor);document.getElementById('meteorBurst').addEventListener('click',()=>{resizeMeteor();meteorCanvas.style.display='block';const burstCount=effectiveQuality()==='low'?5:(window.matchMedia('(max-width: 700px)').matches?7:12);for(let i=0;i<burstCount;i++)setTimeout(()=>{spawnMeteor(true);if(!meteorFrame)meteorFrame=requestAnimationFrame(drawMeteors)},i*100);if(!meteorFrame)meteorFrame=requestAnimationFrame(drawMeteors);uiTone('play',true)});
+function applyShareUiMode(){const params=new URLSearchParams(location.search);const mode=params.get('ui');const locked=mode==='locked';const shared=params.has('v');const toggle=document.getElementById('panelToggle');if(toggle)toggle.style.display=locked?'none':'';const panel=document.getElementById('panel');if(locked){panel.classList.add('collapsed');axesCanvas.classList.remove('shifted')}document.getElementById('toolAxes').style.display=shared?'none':'';document.getElementById('toolReset').style.display=shared?'none':'';const tourAllowed=params.get('tourui')!=='0',videoAllowed=params.get('videoui')!=='0';document.getElementById('toolTour').style.display=tourAllowed?'':'none';document.getElementById('toolVideo').style.display=videoAllowed?'':'none';document.getElementById('tourSection').style.display=tourAllowed?'':'none';document.getElementById('videoSection').style.display=videoAllowed?'':'none';if(!videoAllowed && typeof videoBox!=='undefined' && videoBox)hideVideo()}
+
+// v2 stores the complete viewer state as URL-safe JSON. The legacy binary v1
+// decoder remains below so previously shared links continue to open.
+function encodeState(st){return 'j'+btoa(JSON.stringify(st)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function decodeState(token){try{
+  if(token.startsWith('j')){let t=token.slice(1).replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';const st=JSON.parse(atob(t));if(!st||!Array.isArray(st.p)||!Array.isArray(st.o)||!Array.isArray(st.m))return null;return st}
+  token=token.replace(/-/g,'+').replace(/_/g,'/');while(token.length%4)token+='=';const b=atob(token),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const dv=new DataView(u.buffer);if(dv.getUint8(0)!==1||u.length<45)return null;let off=1,a=[];for(let i=0;i<10;i++){a.push(dv.getFloat32(off,true));off+=4}return {p:a.slice(0,3),o:a.slice(3,6),d:a[6],m:a.slice(7,10),s:u[41],a:u[42],q:u[43],r:u[44],u:'Z',x:1,b:0,w:3,l:0}
+}catch(e){return null}}
+
+function currentShareUrl(){
+  const url = new URL(location.href);
+
+  // Сохраняем выбранную модель именно в параметре xml,
+  // который использует embedpano при загрузке сцены.
+  // Старый параметр scene удаляем, чтобы он не расходился с xml.
+  url.searchParams.set('xml', sceneXml);
+  url.searchParams.delete('scene');
+  url.searchParams.set('v', encodeState(state()));
+  url.searchParams.set('ui', document.getElementById('shareSettings')?.checked === false ? 'locked' : 'full');
+  url.searchParams.set('tourui', document.getElementById('shareTour').checked ? '1' : '0');
+  url.searchParams.set('videoui', document.getElementById('shareVideo').checked ? '1' : '0');
+  url.searchParams.set('fxui', document.getElementById('shareFx27').checked ? '1' : '0');
+  url.searchParams.set('fxlab', document.getElementById('shareFxLab29').checked ? '1' : '0');
+
+  return url.toString();
+}
+function showShareUrl(url){document.getElementById('shareUrl').value=url;shareLinkEl.href=url;shareLinkEl.textContent=url?'\u2197 \u041e\u0442\u043a\u0440\u044b\u0442\u044c \u044d\u0442\u0443 \u0441\u0441\u044b\u043b\u043a\u0443':'\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u044d\u0442\u0443 \u0441\u0441\u044b\u043b\u043a\u0443'}
+async function copyText(t){try{await navigator.clipboard.writeText(t)}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}}
+function copyLink(){const url=currentShareUrl();showShareUrl(url);copyText(url).then(()=>showToast('\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043a\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0430 \u2713'));applyShareUiMode()}
+function applyState(st){if(!st)return;
+  stopPlay();playAngle=0;
+  if(st.u&&upAxisRotations[st.u])upAxis=st.u;
+  pivot={x:Number(st.p[0])||0,y:Number(st.p[1])||0,z:Number(st.p[2])||0};yaw=Number(st.o[0])||0;pitch=Number(st.o[1])||0;roll=Number(st.o[2])||0;distance=Number(st.d)||BASE_DISTANCE;pan={x:Number(st.m[0])||0,y:Number(st.m[1])||0,z:Number(st.m[2])||0};
+  /* Accept both live state values and compact URL-decoded integer values. */
+  scaleEl.value=clamp(st.s>1?st.s/100:st.s,.01,1);aaEl.value=clamp(st.a>2?st.a/20:st.a,0,2);sortIndex=clamp(st.q|0,0,3);perspective=!!st.r;
+  axesOn=st.x===undefined?true:!!st.x;playSpeedDeg=clamp(Number(st.w)||3,.5,12);distanceLocked=!!st.l;
+  const lock=document.getElementById('distLock');distEl.disabled=distanceLocked;lock.classList.toggle('locked',distanceLocked);lock.innerHTML=distanceLocked?'&#128274;':'&#128275;';lock.setAttribute('aria-pressed',String(distanceLocked));
+  axesCanvas.style.display=axesOn?'block':'none';document.getElementById('toolAxes').classList.toggle('active',axesOn);document.getElementById('axesToggle2').textContent='XYZ: '+(axesOn?'ON':'OFF');document.getElementById('axesToggle2').classList.toggle('primary',axesOn);document.getElementById('axesValue').textContent=axesOn?'ON':'OFF';
+  speedEl.value=String(playSpeedDeg);document.getElementById('speedValue').textContent=playSpeedDeg.toFixed(1)+'°/s';syncAxisUI();applyAxisRotation();distEl.value=multiplierToSlider(distance/BASE_DISTANCE);updatePivotUI();applyDistance();applyScale();applyAA();applySort();applyMode();
+  applyWeather(st.wx || 'off', st.wi === undefined ? 50 : st.wi, st.ws === undefined ? 1 : st.ws);
+  applySky(st.sk || 'off');
+  applyRainRipples();
+  applyStars(!!st.zt, st.zb === undefined ? 85 : st.zb, st.zd === undefined ? 75 : st.zd);starClustersEnabled=!!st.sc;document.getElementById('starClustersEnabled').checked=starClustersEnabled;
+  sheetRate=clamp(Number(st.sr)||50,10,100);document.getElementById('sheetRate').value=String(sheetRate);document.getElementById('sheetRateValue').textContent=sheetRate+'%';setVisualFx({cx:0,cs:st.cs,fg:st.fg,lm:st.lm,ne:st.ne,nb:st.nb,rs:st.rs});applyAurora(!!st.au,st.ai===undefined?70:st.ai);
+  document.getElementById('fireworksEnabled').checked=!!st.fw;document.getElementById('fireworksIntensity').value=String(st.fi===undefined?70:st.fi);document.getElementById('fireworksRate').value=String(st.fr===undefined?45:st.fr);applyFireworks();document.getElementById('meteorEnabled').checked=!!st.mt;document.getElementById('meteorIntensity').value=String(st.mi===undefined?55:st.mi);document.getElementById('meteorSpeed').value=String(st.ms===undefined?100:st.ms);applyMeteor();document.getElementById('uiSoundsEnabled').checked=!!st.ue;document.getElementById('uiSoundsVolume').value=String(st.uv===undefined?85:st.uv);setUiVolume();document.getElementById('musicEnabled').checked=!!st.me;musicAutoStart=st.ma===undefined?true:!!st.ma;updateMusicButton();document.getElementById('musicVolume').value=String(st.mv===undefined?30:st.mv);setMusicVolume();if(st.mp){document.getElementById('musicUrl').value=String(st.mp);musicPath=String(st.mp);musicAudio.src=musicPath;musicAudio.preload='auto';}
+  if(Array.isArray(st.tour)){tourPoints=st.tour.filter(p=>Array.isArray(p)&&p.length===11&&p.every(Number.isFinite)).slice(0,100);refreshTourUI()}if(st.ts)document.getElementById("tourSeconds").value=st.ts;if(st.vu)document.getElementById("videoUrl").value=st.vu;setFlightSpeed(st.fs??1);setFlightCount(st.fc??100);setAuroraColor(st.ac??0);if(st.qm)applyQualityMode(st.qm);syncFlightButton();if(st.b)startPlay();
+}
+function loadURLState(){const t=new URLSearchParams(location.search).get('v');if(!t)return false;const st=decodeState(t);if(st){applyState(st);return true}return false}
+function saveView(){const st=state();savedCameraState=captureCameraState();localStorage.setItem('3XyzMedia_single_view_v3',JSON.stringify(st));localStorage.setItem('3XyzMedia_saved_camera_v1',JSON.stringify(savedCameraState));showShareUrl(currentShareUrl());showToast('\u0412\u0438\u0434 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d \u2713')}
+function loadView(){const raw=localStorage.getItem('3XyzMedia_single_view_v3');if(!raw){showToast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043d\u043e\u0433\u043e \u0432\u0438\u0434\u0430 \u043d\u0435\u0442');return}try{const loaded=JSON.parse(raw);applyState(loaded);savedCameraState=captureCameraState();showShareUrl(currentShareUrl());showToast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043d\u044b\u0439 \u0432\u0438\u0434 \u043e\u0442\u043a\u0440\u044b\u0442 \u2713')}catch(e){showToast('\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043d\u044b\u0439 \u0432\u0438\u0434')}}
+function showToast(s){const t=document.getElementById('toast');t.textContent=s;t.classList.add('show');clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('show'),1400)}
+
+surface.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation()});
+// Pointer/touch controls: one finger rotates; two fingers pinch-zoom and pan.
+const activePointers = new Map();
+let gesture = null;
+function pointerPoint(ev){ return {x:ev.clientX,y:ev.clientY}; }
+function getTwoPointerMetrics(){
+  const pts=[...activePointers.values()];
+  if(pts.length<2)return null;
+  const a=pts[0],b=pts[1],dx=b.x-a.x,dy=b.y-a.y;
+  return {distance:Math.max(1,Math.hypot(dx,dy)),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};
+}
+function beginGesture(){
+  const pts=[...activePointers.values()];
+  if(!pts.length){gesture=null;dragging=false;dragMode=null;surface.classList.remove('dragging');return;}
+  dragging=true; surface.classList.add('dragging');
+  if(pts.length>=2){
+    const m=getTwoPointerMetrics();
+    gesture={type:'pinch',distance:m.distance,cx:m.cx,cy:m.cy,camDistance:distance,pan:{...pan}};
+  }else{
+    const p=pts[0];
+    gesture={type:'single',x:p.x,y:p.y,yaw,pitch,roll,pan:{...pan},rollAngle:screenRollAngle(p.x,p.y),shift:!!p.shiftKey,button:p.button};
+    dragMode=(p.button===1||p.button===2)?'pan':(p.shiftKey?'roll':'orbit');
+    startX=p.x;startY=p.y;startYaw=yaw;startPitch=pitch;startRoll=roll;startPan={...pan};startRollAngle=screenRollAngle(p.x,p.y);
+  }
+}
+function updateMusicButton(){
+  const b=document.getElementById('toolMusic');if(!b)return;
+  if(musicPausedByUser){b.innerHTML='&#10074;&#10074;';b.title='Музыка на паузе — нажми, чтобы продолжить';b.setAttribute('aria-label','Продолжить музыку');b.classList.add('active');}
+  else{b.innerHTML='&#9654;&#8260; MP3';b.title='Музыка запускается первым касанием модели; нажми во время воспроизведения для паузы';b.setAttribute('aria-label','MP3, пауза выключена');b.classList.remove('active');}
+}
+function startMusicFromGesture(){
+  if(!musicAutoStart || musicPausedByUser || !musicAudio.paused || musicStartPending || !musicPath) return;
+  musicStartPending=true;
+  const target=new URL(musicPath,location.href).href;
+  if(!musicAudio.src || musicAudio.src!==target) musicAudio.src=musicPath;
+  document.getElementById('musicEnabled').checked=true;
+  setMusicVolume();
+  ensureAudioContext();
+  const promise=musicAudio.play();
+  if(promise&&promise.then)promise.then(()=>{musicStartPending=false;updateMusicButton()}).catch((e)=>{musicStartPending=false;document.getElementById('musicEnabled').checked=false;updateMusicButton();if(!musicGestureWarned){musicGestureWarned=true;showToast('Браузер блокирует MP3 с этого жеста или файл не найден — нажми MP3')}});else musicStartPending=false;
+}
+
+// v22: Run audio unlock directly in the trusted wheel event, before krpano zoom handlers.
+// Browser autoplay policy may still disallow playback if the media is unavailable.
+['pointerdown','touchstart','click','keydown'].forEach(type=>window.addEventListener(type,ev=>{if(ev.isTrusted&&ev.target?.id!=='toolMusic')startMusicFromGesture()},{capture:true,passive:true}));
+window.addEventListener('wheel', function(ev){
+  if(ev.isTrusted && musicAutoStart && !musicPausedByUser) startMusicFromGesture();
+}, {capture:true,passive:true});
+
+surface.addEventListener('pointerdown',ev=>{
+  ev.preventDefault();ev.stopPropagation();
+  if(k)k.set('control.locked','true');
+  startMusicFromGesture();
+  activePointers.set(ev.pointerId,{...pointerPoint(ev),button:ev.button,shiftKey:ev.shiftKey});
+  try{surface.setPointerCapture(ev.pointerId)}catch(e){}
+  beginGesture();
+});
+// Some mobile browsers unlock HTMLMediaElement only at the end of the first touch.
+surface.addEventListener('pointerup',()=>{if(musicAutoStart&&!musicPausedByUser&&musicAudio.paused&&!musicStartPending)startMusicFromGesture();},{passive:true});
+surface.addEventListener('pointermove',ev=>{
+  if(!activePointers.has(ev.pointerId))return;
+  ev.preventDefault();ev.stopPropagation();
+  activePointers.set(ev.pointerId,{...pointerPoint(ev),button:ev.button,shiftKey:ev.shiftKey});
+  if(activePointers.size>=2){
+    const m=getTwoPointerMetrics();if(!m||!gesture||gesture.type!=='pinch')beginGesture();
+    const g=gesture;if(!g||g.type!=='pinch')return;
+    // Pinch distance scales camera distance; moving the midpoint pans the view.
+    const ratio=g.distance/m.distance;
+    if(!distanceLocked) distance=clamp(g.camDistance*ratio,BASE_DISTANCE*.00001,BASE_DISTANCE*100000);
+    const c=cameraState(),s=Math.max(.00001,g.camDistance*.0024);
+    const dx=m.cx-g.cx,dy=m.cy-g.cy;
+    pan.x=g.pan.x+c.right.x*(dx*s)+c.up.x*(-dy*s);
+    pan.y=g.pan.y+c.right.y*(dx*s)+c.up.y*(-dy*s);
+    pan.z=g.pan.z+c.right.z*(dx*s)+c.up.z*(-dy*s);
+    distEl.value=multiplierToSlider(distance/BASE_DISTANCE);if(!distanceLocked)applyDistance();else updateView();return;
+  }
+  if(!gesture||gesture.type!=='single')beginGesture();
+  const g=gesture;if(!g||g.type!=='single')return;
+  const dx=ev.clientX-g.x,dy=ev.clientY-g.y;
+  if(dragMode==='orbit'){yaw=g.yaw+dx*.32;pitch=clamp(g.pitch-dy*.24,-179,179);updateView()}
+  else if(dragMode==='roll'){roll=g.roll+deg(screenRollAngle(ev.clientX,ev.clientY)-g.rollAngle);updateView()}
+  else if(dragMode==='pan'){const c=cameraState();const s=Math.max(.00001,distance*.0024);pan.x=g.pan.x+c.right.x*(dx*s)+c.up.x*(-dy*s);pan.y=g.pan.y+c.right.y*(dx*s)+c.up.y*(-dy*s);pan.z=g.pan.z+c.right.z*(dx*s)+c.up.z*(-dy*s);updateView()}
+});
+function finishPointer(ev){
+  ev.stopPropagation();activePointers.delete(ev.pointerId);
+  try{surface.releasePointerCapture(ev.pointerId)}catch(e){}
+  if(activePointers.size){beginGesture();}else{gesture=null;dragging=false;dragMode=null;surface.classList.remove('dragging');if(k)k.set('control.locked','true');}
+}
+surface.addEventListener('pointerup',finishPointer);
+surface.addEventListener('pointercancel',finishPointer);
+surface.addEventListener('lostpointercapture',ev=>{if(activePointers.has(ev.pointerId))finishPointer(ev)});
+surface.addEventListener('wheel',ev=>{ev.preventDefault();ev.stopPropagation();if(distanceLocked)return;const factor=ev.deltaY>0?1.085:1/1.085;distance=clamp(distance*factor,BASE_DISTANCE*.00001,BASE_DISTANCE*100000);distEl.value=multiplierToSlider(distance/BASE_DISTANCE);applyDistance()},{passive:false});
+/* dblclick removed */
+/* Block ALL mouse events from bubbling to krpano (it listens on window/document) */
+['mousedown','mouseup','mousemove','click','dblclick'].forEach(function(t){
+  surface.addEventListener(t,function(e){
+    e.stopPropagation();
+    if(t==='dblclick'){e.preventDefault();e.stopImmediatePropagation();
+      if(k){k.set('control.locked','true');k.set('view.fov',70);k.call('view.update();')}
+    }
+  });
+});
+/* Capture-phase block on document: intercept BEFORE krpano gets the event */
+['mousedown','mouseup','mousemove','click','dblclick'].forEach(function(t){
+  document.addEventListener(t,function(e){
+    if(e.target===surface||surface.contains(e.target)){
+      e.stopPropagation();
+      if(t==='dblclick'){e.preventDefault();e.stopImmediatePropagation()}
+    }
+  },{capture:true});
+});
+distEl.addEventListener('input',()=>{if(distanceLocked)return;applyDistance()});document.getElementById('distLock').addEventListener('click',()=>{distanceLocked=!distanceLocked;distEl.disabled=distanceLocked;const b=document.getElementById('distLock');b.classList.toggle('locked',distanceLocked);b.innerHTML=distanceLocked?'&#128274;':'&#128275;';b.title=distanceLocked?'Снять фиксацию дистанции':'Зафиксировать дистанцию';b.setAttribute('aria-pressed',String(distanceLocked));showToast(distanceLocked?'Дистанция зафиксирована 🔒':'Дистанция разблокирована 🔓')});scaleEl.addEventListener('input',applyScale);aaEl.addEventListener('input',applyAA);speedEl.addEventListener('input',()=>{playSpeedDeg=Number(speedEl.value);document.getElementById('speedValue').textContent=playSpeedDeg.toFixed(1)+'\u00b0/s'});
+
+document.getElementById('weatherMode').addEventListener('change',()=>{applyWeather(document.getElementById('weatherMode').value,document.getElementById('weatherIntensity').value,document.getElementById('weatherSpeed').value);applyRainRipples();showToast('Погода: '+document.getElementById('weatherMode').selectedOptions[0].text)});
+document.getElementById('skyMode').addEventListener('change',()=>{applySky(document.getElementById('skyMode').value);showToast('Небо: '+document.getElementById('skyMode').selectedOptions[0].text);uiTone('toggle',true)});
+document.getElementById('weatherIntensity').addEventListener('input',()=>{document.getElementById('weatherIntensityValue').textContent=document.getElementById('weatherIntensity').value+'%';applyWeather(document.getElementById('weatherMode').value,document.getElementById('weatherIntensity').value,document.getElementById('weatherSpeed').value)});
+document.getElementById('weatherSpeed').addEventListener('input',()=>{document.getElementById('weatherSpeedValue').textContent=Number(document.getElementById('weatherSpeed').value).toFixed(2)+'×';applyWeather(document.getElementById('weatherMode').value,document.getElementById('weatherIntensity').value,document.getElementById('weatherSpeed').value)});
+document.getElementById('starsEnabled').addEventListener('change',()=>{applyStars(document.getElementById('starsEnabled').checked,document.getElementById('starsBrightness').value,document.getElementById('starsDensity').value);showToast(document.getElementById('starsEnabled').checked?'Звёздное небо включено ✦':'Звёздное небо выключено')});
+document.getElementById('starClustersEnabled').addEventListener('change',()=>{starClustersEnabled=document.getElementById('starClustersEnabled').checked;if(starsEnabled){if(starsFrame)cancelAnimationFrame(starsFrame);starsFrame=requestAnimationFrame(drawStars)}showToast(starClustersEnabled?'Добавлены яркие звёзды и скопления':'Дополнительные звёзды выключены')});
+document.getElementById('starsBrightness').addEventListener('input',()=>applyStars(document.getElementById('starsEnabled').checked,document.getElementById('starsBrightness').value,document.getElementById('starsDensity').value));
+document.getElementById('starsDensity').addEventListener('input',()=>applyStars(document.getElementById('starsEnabled').checked,document.getElementById('starsBrightness').value,document.getElementById('starsDensity').value));
+document.getElementById('shuffleCosmos').addEventListener('click',()=>{stellarSeed=(Math.floor(Math.random()*0x7fffffff)+1)>>>0;makeCosmosDust();if(starsEnabled)makeStars();applyVisualFx();if(starsEnabled){if(starsFrame)cancelAnimationFrame(starsFrame);starsFrame=requestAnimationFrame(drawStars)}showToast('Положение звёзд, галактик и космических объектов обновлено ✦')});
+document.getElementById('sheetRate').addEventListener('input',()=>{sheetRate=Number(document.getElementById('sheetRate').value);document.getElementById('sheetRateValue').textContent=sheetRate+'%';if(lightningMode==='sheet')nextLightningAt=performance.now()+100;});
+document.getElementById('auroraEnabled').addEventListener('change',()=>{applyAurora(document.getElementById('auroraEnabled').checked,document.getElementById('auroraIntensity').value);setAuroraColor(document.getElementById('auroraColor').value);uiTone('toggle',true)});
+document.getElementById('auroraIntensity').addEventListener('input',()=>applyAurora(document.getElementById('auroraEnabled').checked,document.getElementById('auroraIntensity').value));
+['cosmosEnabled','cosmosStrength','fogIntensity','lightningMode','neonEnabled','neonStrength'].forEach(id=>document.getElementById(id).addEventListener(id==='fogIntensity'||id==='neonStrength'||id==='cosmosStrength'?'input':'change',()=>{applyVisualFx();}));
+
+document.getElementById('panelToggle').addEventListener('click',()=>{const p=document.getElementById('panel');p.classList.toggle('collapsed');axesCanvas.classList.toggle('shifted',!p.classList.contains('collapsed'))});document.getElementById('toolAxes').addEventListener('click',toggleAxes);document.getElementById('axesToggle2').addEventListener('click',toggleAxes);
+document.getElementById('upZ').addEventListener('click',()=>setUpAxis('Z'));
+document.getElementById('upMinusZ').addEventListener('click',()=>setUpAxis('-Z'));
+document.getElementById('upY').addEventListener('click',()=>setUpAxis('Y'));
+document.getElementById('upMinusY').addEventListener('click',()=>setUpAxis('-Y'));
+document.getElementById('upX').addEventListener('click',()=>setUpAxis('X'));
+['upZ','upMinusZ','upY','upMinusY','upX','upMinusX'].forEach(id=>document.getElementById(id).addEventListener('click',()=>uiTone('toggle',true)));document.getElementById('upMinusX').addEventListener('click',()=>setUpAxis('-X'));document.getElementById('toolPlay').addEventListener('click',()=>playOn?stopPlay():startPlay());document.getElementById('toolHome').addEventListener('click',resetCamera);document.getElementById('toolReset').addEventListener('click',resetAll);document.getElementById('reset2').addEventListener('click',resetCamera);/* pivotReset removed */document.getElementById('sort').addEventListener('click',()=>{sortIndex=(sortIndex+1)%sortModes.length;applySort()});document.getElementById('mode').addEventListener('click',()=>{perspective=!perspective;applyMode()});document.getElementById('saveView').addEventListener('click',saveView);document.getElementById('loadView').addEventListener('click',loadView);document.getElementById('copyLink').addEventListener('click',copyLink);document.getElementById('clearView').addEventListener('click',()=>{localStorage.removeItem('3XyzMedia_single_view_v3');showShareUrl('');showToast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u0443\u0434\u0430\u043b\u0435\u043d\u043e')});
+document.getElementById('toolEffects').addEventListener('click',()=>setEffectsMaster(!effectsMasterEnabled));
+document.getElementById('qualityAuto').addEventListener('click',()=>applyQualityMode('auto'));document.getElementById('qualityLow').addEventListener('click',()=>applyQualityMode('low'));document.getElementById('qualityHigh').addEventListener('click',()=>applyQualityMode('high'));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){playLast=performance.now();}});
+window.addEventListener('resize',()=>{updateView();drawAxes();if(skyMode!=='off'||weatherMode==='rain'||weatherMode==='heavy')resizeAtmosphere();if(weatherMode!=='off')resizeSnowOverlay();if(starsEnabled)resizeStarsOverlay();if(auroraEnabled)applyAurora(true,auroraIntensity);if(fireFxActive||fireCanvas.style.display==='block')resizeFireCanvas();if(cosmosEnabled||fogIntensity>0||lightningMode!=='off'||neonEnabled)resizeFxCanvas();if(fireworksEnabled||fwParticles.length||fwRockets.length)resizeFireworks();if(meteorEnabled||meteorParticles.length)resizeMeteor()});window.addEventListener('keydown',ev=>{if(ev.key==='r'||ev.key==='R')resetCamera();if(ev.code==='Space'&&!ev.repeat){ev.preventDefault();playOn?stopPlay():startPlay()}});
+// Audio v1: synthesized UI cues plus optional background MP3. Nothing autoplays on page load.
+let audioCtx=null, audioLastAt=0, musicObjectUrl=null;
+const musicAudio=new Audio(); musicAudio.loop=true; musicAudio.preload='auto'; musicAudio.playsInline=true; musicAudio.volume=.30;musicAudio.addEventListener('play',()=>{musicStartPending=false;updateMusicButton()});musicAudio.addEventListener('playing',()=>{musicStartPending=false;updateMusicButton()});musicAudio.addEventListener('pause',()=>{musicStartPending=false;updateMusicButton()});
+let musicStartPending=false;let musicGestureWarned=false;
+let musicPath='music/3.mp3';
+let musicAutoStart=true; // false means touch never starts music until the MP3 button is pressed
+let musicPausedByUser=false; // explicit pause blocks touch-triggered restart until the pause button is pressed again
+function ensureAudioContext(){if(!audioCtx){const AC=window.AudioContext||window.webkitAudioContext;if(AC)audioCtx=new AC()}if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});return audioCtx}
+function uiTone(kind='tap',force=false){
+  if(!document.getElementById('uiSoundsEnabled')?.checked)return;
+  const now=performance.now();if(!force&&now-audioLastAt<95)return;audioLastAt=now;
+  const ac=ensureAudioContext();if(!ac)return;
+  const vol=Number(document.getElementById('uiSoundsVolume').value)/100;if(vol<=0)return;
+  const playTone=()=>{
+    if(ac.state!=='running')return;
+    const t=ac.currentTime,osc=ac.createOscillator(),gain=ac.createGain();
+    const presets={tap:[660,820,.055,'sine'],rotate:[210,280,.035,'triangle'],zoom:[420,340,.065,'sine'],toggle:[520,740,.075,'sine'],play:[330,495,.12,'triangle']};
+    const q=presets[kind]||presets.tap;osc.type=q[3];osc.frequency.setValueAtTime(q[0],t);osc.frequency.exponentialRampToValueAtTime(Math.max(60,q[1]),t+q[2]);gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(Math.max(.0002,vol*.22),t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+q[2]);osc.connect(gain);gain.connect(ac.destination);osc.start(t);osc.stop(t+q[2]+.01);
+  };
+  if(ac.state==='running')playTone();else ac.resume().then(playTone).catch(()=>{});
+}
+function setMusicVolume(){const v=Number(document.getElementById('musicVolume').value);musicAudio.volume=v/100;document.getElementById('musicVolumeValue').textContent=v+'%'}
+function setUiVolume(){document.getElementById('uiSoundsVolumeValue').textContent=document.getElementById('uiSoundsVolume').value+'%'}
+function applyMusicPath(){const input=document.getElementById('musicUrl').value.trim();if(!input){showToast('Укажи путь к MP3');return}musicPath=input;musicAudio.pause();musicAudio.preload='auto';musicAudio.src=input;musicAudio.load();updateMusicButton();showToast('Источник MP3 установлен. Нажми «Фоновая MP3-музыка» для запуска')}
+async function toggleMusic(){const check=document.getElementById('musicEnabled');if(check.checked){ensureAudioContext();if(!musicAudio.src||musicAudio.src!==new URL(musicPath,location.href).href)musicAudio.src=musicPath;setMusicVolume();try{await musicAudio.play();showToast('Фоновая музыка включена ♪')}catch(e){check.checked=false;showToast('Не удалось загрузить MP3. Проверь путь и наличие файла')} }else{musicAudio.pause();showToast('Фоновая музыка выключена')}}
+document.getElementById('uiSoundsEnabled').addEventListener('change',()=>{if(document.getElementById('uiSoundsEnabled').checked){ensureAudioContext();uiTone('toggle',true)}else showToast('Звуки управления выключены')});
+document.getElementById('uiSoundsVolume').addEventListener('input',setUiVolume);
+document.getElementById('musicVolume').addEventListener('input',setMusicVolume);
+document.getElementById('musicEnabled').addEventListener('change',toggleMusic);
+document.getElementById('applyMusicUrl').addEventListener('click',()=>{applyMusicPath();uiTone('tap',true)});
+document.getElementById('musicStop').addEventListener('click',()=>{musicAudio.pause();musicAudio.currentTime=0;document.getElementById('musicEnabled').checked=false;uiTone('tap',true);showToast('Музыка остановлена')});
+// Gentle sound feedback for user controls and gestures, throttled during continuous movement.
+document.getElementById('panelToggle').addEventListener('click',()=>uiTone('tap'));
+document.getElementById('toolAxes').addEventListener('click',()=>uiTone('toggle'));
+document.getElementById('toolPlay').addEventListener('click',()=>uiTone('play'));
+document.getElementById('toolHome').addEventListener('click',()=>uiTone('tap'));
+document.getElementById('toolReset').addEventListener('click',()=>uiTone('tap'));
+document.getElementById('toolMusic').addEventListener('click',async()=>{
+  uiTone('tap',true);const check=document.getElementById('musicEnabled');
+  if(!musicAudio.paused){
+    musicPausedByUser=true;musicAudio.pause();check.checked=false;updateMusicButton();
+    showToast('Музыка на паузе — касание модели не включит её');return;
+  }
+  // Pressing the single MP3 button again explicitly releases pause and resumes playback.
+  musicPausedByUser=false;ensureAudioContext();
+  if(!musicAudio.src||musicAudio.src!==new URL(musicPath,location.href).href)musicAudio.src=musicPath;
+  setMusicVolume();check.checked=true;
+  try{await musicAudio.play();updateMusicButton();showToast('Музыка включена ♪')}
+  catch(e){check.checked=false;updateMusicButton();showToast('Не удалось загрузить MP3. Проверь music/3.mp3')}
+});
+surface.addEventListener('pointerdown',()=>uiTone('tap'));
+surface.addEventListener('pointermove',()=>{if(dragging)uiTone('rotate')});
+surface.addEventListener('wheel',()=>{startMusicFromGesture();uiTone('zoom')},{passive:true});
+document.addEventListener('keydown',()=>{startMusicFromGesture()},{passive:true});
+document.getElementById('dist').addEventListener('pointerdown',startMusicFromGesture);
+
+document.getElementById('flightToggle').addEventListener('click',()=>{applySky(skyMode==='flight'?'off':'flight');document.getElementById('flightToggle').textContent=skyMode==='flight'?'✦ Выключить полёт':'✦ Включить полёт';});
+function setFlightSpeed(v){flightSpeed=Math.max(.35,Math.min(4,Number(v)||1));document.getElementById('flightSpeed').value=flightSpeed;document.getElementById('flightSpeedValue').textContent=flightSpeed.toFixed(2)+'×'}
+function setFlightCount(v){flightCount=Math.max(100,Math.min(300,Number(v)||100));document.getElementById('flightCount').value=flightCount;document.getElementById('flightCountValue').textContent=flightCount+'%';makeWarpStars()}
+document.getElementById('flightSpeed').addEventListener('input',e=>setFlightSpeed(e.target.value));
+document.getElementById('flightCount').addEventListener('input',e=>setFlightCount(e.target.value));
+document.getElementById('brand').addEventListener('click',()=>{const b=document.getElementById('brand'),expanded=!b.classList.contains('expanded');b.classList.toggle('expanded',expanded);b.setAttribute('aria-expanded',String(expanded));});
+document.getElementById('helpToggle').addEventListener('click',()=>{const h=document.getElementById('help'),b=document.getElementById('helpToggle'),show=h.classList.contains('hidden');h.classList.toggle('hidden',!show);b.setAttribute('aria-expanded',String(show));b.title=show?'Скрыть подсказки':'Показать подсказки';});
+async function init(){
+  await loadPivotFile();
+  const fromURL=loadURLState();
+  musicAudio.preload='auto';musicAudio.playsInline=true;
+  const resolvedMusicUrl=new URL(musicPath,location.href).href;
+  if(!musicAudio.src||musicAudio.src!==resolvedMusicUrl)musicAudio.src=musicPath;
+  try{musicAudio.load()}catch(e){}
+  if(!fromURL){setUpAxis('Z')}
+  else{showShareUrl(currentShareUrl())}
+  updateMusicButton();
+  const incomingUI=new URLSearchParams(location.search).get('ui');document.getElementById('shareSettings').checked=incomingUI!=='locked';document.getElementById('shareTour').checked=new URLSearchParams(location.search).get('tourui')!=='0';document.getElementById('shareVideo').checked=new URLSearchParams(location.search).get('videoui')!=='0';applyShareUiMode();showShareUrl(currentShareUrl());
+  // Defer MP3 playback until the user's first trusted gesture (wheel, pointer, touch).
+  if(!playOn)startPlay();
+  sharedStartState=state();
+  savedCameraState=captureCameraState();
+  try{const saved=localStorage.getItem('3XyzMedia_saved_camera_v1');if(!fromURL&&saved)savedCameraState=JSON.parse(saved)}catch(e){}
+  if(fromURL && sharedStartState.b){showShareUrl(currentShareUrl())}
+
+  // Save the factory view once on the creator's device. Visitors opening a
+  // shared URL won't get this key, so their Reset returns to the shared view.
+  if(!fromURL){try{if(!localStorage.getItem('3XyzMedia_factory_view_v1'))localStorage.setItem('3XyzMedia_factory_view_v1',JSON.stringify(state()))}catch(e){}}
+}
+
+// v23 TOUR: saved camera states. Each point stores pivot, orientation, distance and pan.
+let tourPoints=[],tourFrame=0,tourPlaying=false;
+function tourVector(){return [...captureCameraState().p,...captureCameraState().o,captureCameraState().d,...captureCameraState().m,0]}
+function refreshTourUI(){document.getElementById('tourCount').textContent=tourPoints.length+' точек'}
+function stopTour(){tourPlaying=false;if(tourFrame)cancelAnimationFrame(tourFrame);tourFrame=0;document.getElementById('tourPlay').textContent='▶ TOUR'}
+function addTourPoint(){if(tourPoints.length>=100){showToast('Максимум 100 точек');return}stopTour();tourPoints.push(tourVector());refreshTourUI();showToast('Точка '+tourPoints.length+' записана')}
+function setTourPoint(p){pivot={x:p[0],y:p[1],z:p[2]};yaw=p[3];pitch=p[4];roll=p[5];distance=p[6];pan={x:p[7],y:p[8],z:p[9]};distEl.value=multiplierToSlider(distance/BASE_DISTANCE);updateView()}
+function smoothstep(t){return t*t*(3-2*t)}
+function angleLerp(a,b,t){return a+(((b-a+540)%360)-180)*t}
+function playTour(){if(tourPoints.length<2){showToast('Добавь хотя бы 2 точки маршрута');return}stopTour();stopPlay();tourPlaying=true;document.getElementById('tourPlay').textContent='Ⅱ Пауза';const duration=Number(document.getElementById('tourSeconds').value)*1000;let begin=performance.now();function frame(now){if(!tourPlaying)return;const cursor=Math.max(0,(now-begin)/duration),seg=Math.min(tourPoints.length-2,Math.floor(cursor)),t=smoothstep(Math.min(1,cursor-seg)),a=tourPoints[seg],b=tourPoints[seg+1];let p=a.map((v,i)=>i===3||i===4||i===5?angleLerp(v,b[i],t):v+(b[i]-v)*t);setTourPoint(p);if(cursor>=tourPoints.length-1){stopTour();showToast('Маршрут завершён');return}tourFrame=requestAnimationFrame(frame)}tourFrame=requestAnimationFrame(frame)}
+const tq=id=>document.getElementById(id);
+tq('toolTour').addEventListener('click',()=>tourPlaying?stopTour():playTour());tq('tourAdd').addEventListener('click',addTourPoint);tq('tourUndo').addEventListener('click',()=>{stopTour();tourPoints.pop();refreshTourUI()});tq('tourPlay').addEventListener('click',()=>tourPlaying?stopTour():playTour());tq('tourStop').addEventListener('click',stopTour);tq('tourClear').addEventListener('click',()=>{stopTour();tourPoints=[];refreshTourUI()});tq('tourSeconds').addEventListener('input',()=>{tq('tourSecondsValue').textContent=tq('tourSeconds').value+' с'});
+// Native floating MP4 player; stays outside krpano canvas and allows dragging.
+const videoBox=tq('videoFloat'),videoPlayer=tq('videoPlayer');
+function hideVideo(){videoPlayer.pause();videoBox.style.display='none'}
+const videoMobileControls=tq('videoMobileControls');const videoMobilePlay=tq('videoMobilePlay');const videoMobileSeek=tq('videoMobileSeek');const videoMobileMute=tq('videoMobileMute');
+const compactVideo=window.matchMedia('(pointer: coarse)').matches || innerWidth<700;
+if(compactVideo){videoPlayer.controls=false;videoMobileControls.style.display='flex';videoPlayer.setAttribute('playsinline','');}
+videoMobilePlay.addEventListener('click',()=>{if(videoPlayer.paused)videoPlayer.play().catch(()=>showToast('Не удалось запустить видео'));else videoPlayer.pause()});
+videoPlayer.addEventListener('play',()=>videoMobilePlay.textContent='Ⅱ');videoPlayer.addEventListener('pause',()=>videoMobilePlay.textContent='▶');
+videoPlayer.addEventListener('timeupdate',()=>{if(Number.isFinite(videoPlayer.duration)&&videoPlayer.duration>0)videoMobileSeek.value=String(Math.round(videoPlayer.currentTime/videoPlayer.duration*1000))});
+videoMobileSeek.addEventListener('input',()=>{if(Number.isFinite(videoPlayer.duration)&&videoPlayer.duration>0)videoPlayer.currentTime=videoPlayer.duration*Number(videoMobileSeek.value)/1000});
+videoMobileMute.addEventListener('click',()=>{videoPlayer.muted=!videoPlayer.muted;videoMobileMute.textContent=videoPlayer.muted?'🔇':'🔊'});
+videoPlayer.addEventListener('webkitbeginfullscreen',()=>{try{videoPlayer.webkitExitFullscreen()}catch(e){}});
+tq('videoOpen').addEventListener('click',()=>{const url=tq('videoUrl').value.trim();if(!url)return;videoPlayer.src=url;videoBox.style.display='block';videoPlayer.play().catch(()=>showToast('Нажми ▶ в плеере или проверь путь к MP4'))});tq('videoClose').addEventListener('click',hideVideo);tq('videoX').addEventListener('click',hideVideo);
+let videoGesture=null;
+videoBox.addEventListener('pointerdown',e=>{
+ if(e.target.closest('button,input,select') || (e.target===videoPlayer&&!e.altKey))return;
+ videoGesture={pid:e.pointerId,x:e.clientX,y:e.clientY,l:videoBox.getBoundingClientRect().left,t:videoBox.getBoundingClientRect().top};
+ videoBox.setPointerCapture(e.pointerId);e.preventDefault();e.stopPropagation();
+});
+videoBox.addEventListener('pointermove',e=>{if(!videoGesture||videoGesture.pid!==e.pointerId)return;videoBox.style.left=Math.max(0,Math.min(innerWidth-videoBox.offsetWidth,videoGesture.l+e.clientX-videoGesture.x))+'px';videoBox.style.top=Math.max(0,Math.min(innerHeight-videoBox.offsetHeight,videoGesture.t+e.clientY-videoGesture.y))+'px';videoBox.style.bottom='auto'});
+videoBox.addEventListener('pointerup',()=>videoGesture=null);videoBox.addEventListener('pointercancel',()=>videoGesture=null);
+function openVideo(){const url=tq('videoUrl').value.trim();if(!url){showToast('Укажи путь к MP4');return}if(videoPlayer.getAttribute('src')!==url){videoPlayer.src=url;videoPlayer.load()}videoBox.style.display='block';videoPlayer.play().catch(()=>showToast('Нажми ▶ на видео: нужен жест пользователя или проверь файл'))}
+tq('videoOpen').onclick=openVideo;
+tq('toolVideo').addEventListener('click',()=>videoBox.style.display==='none'?openVideo():hideVideo());
+// Lightweight reveal demonstration -- screen footprint change, not true PLY particle animation.
+tq('modelReveal').addEventListener('click',()=>{const old=Number(scaleEl.value),start=performance.now();function anim(now){const t=Math.min(1,(now-start)/2300),v=t<.5?.025+(old-.025)*Math.pow(1-2*t,2):.025+(old-.025)*Math.pow(2*t-1,2);scaleEl.value=Math.max(.01,v);applyScale();if(t<1)requestAnimationFrame(anim);else{scaleEl.value=old;applyScale()}}requestAnimationFrame(anim)});
+// When interacting manually, stop programmed camera motion.
+surface.addEventListener('pointerdown',stopTour);surface.addEventListener('wheel',stopTour,{passive:true});
+embedpano({target:'pano',xml:sceneXml,html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:async function(krpano){k=krpano;await init();document.getElementById('weatherIntensityValue').textContent=weatherIntensity+'%';document.getElementById('weatherSpeedValue').textContent=weatherSpeed.toFixed(2)+'×';const _p=document.getElementById('panel');axesCanvas.classList.toggle('shifted',!_p.classList.contains('collapsed'));drawAxes();startScreenWeather();resizeAtmosphere();applySky(skyMode);applyRainRipples();applyFireworks();applyMeteor();applyShareUiMode();showToast('3XyzMedia RGB Bridge готов ✓')}});
+
+// Start with automatic quality: modest canvas resolution on phones, higher quality on desktop.
+qualityReady=true;applyQualityMode(qualityMode);
+</script>
+<script id="fxLabLogic27">
+(() => {
+ 'use strict';
+ let mode=1,frame=0,started=0,playing=false;
+ const el=id=>document.getElementById(id);
+ const params=new URLSearchParams(location.search);
+ const visitor=params.has('v');
+ const permitted=visitor && params.get('fxui')==='1';
+ const labAllowed=visitor && params.get('fxlab')==='1';
+ let initial=null;
+ if(visitor){try{initial=decodeState(params.get('v')||'')}catch(e){}}
+ function validMode(m){return [1,2,3,4,5,6].includes(Number(m))?Number(m):1}
+ if((permitted||labAllowed)&&initial){mode=validMode(initial.em);el('fxPower26').value=String(Math.max(.2,Math.min(3,Number(initial.ep)||1)));el('fxRadius26').value=String(Math.max(1,Math.min(1500,Number(initial.er)||100)));el('fxSpeed27').value=String(Math.max(.25,Math.min(4,Number(initial.et)||1)));el('fxHeight34').value=String(initial.eh===undefined?1:Math.max(0,Math.min(5,Number(initial.eh)||0)));el('fxScaleFire35').checked=!!initial.ez;el('fx3D36').checked=!!initial.e3;}
+ const sceneReady=()=>typeof k!=='undefined' && k && typeof k.set==='function';
+ function setVal(path,value){if(sceneReady()){try{k.set('image.splats.'+path,value);return true}catch(e){el('fxStatus26').textContent='Ошибка krpano: '+e.message}}return false}
+ function setProgress(x){setVal('fx_progress',x)}
+ function syncLabels(){el('fxPowerValue').textContent=Number(el('fxPower26').value).toFixed(1)+'×';el('fxRadiusValue').textContent=el('fxRadius26').value;el('fxSpeedValue27').textContent=Number(el('fxSpeed27').value).toFixed(2)+'×';el('fxHeightValue34').textContent=Number(el('fxHeight34').value).toFixed(2)+'×';document.querySelectorAll('[data-fxmode]').forEach(b=>b.classList.toggle('sel',Number(b.dataset.fxmode)===mode))}
+ function stopAnimation(){playing=false;if(frame)cancelAnimationFrame(frame);frame=0;}
+ function reset(){stopAnimation();xyzFire44Stop();xyzFire39Stop();stopFireFx(true);setProgress(0);setVal('fx_mode',0);el('fxStatus26').textContent='Исходная геометрия восстановлена.'}
+ function selectMode(m){reset();mode=validMode(m);syncLabels();el('fxStatus26').textContent='Выбран: '+({1:'BURST',2:'VORTEX',3:'UNVEIL',4:'RAINBOW',5:'SPIRAL',6:'FIRE'}[mode]);}
+ function play(){if(!sceneReady()){el('fxStatus26').textContent='krpano ещё не готов';return}if(playing)stopAnimation();setVal('fx_mode',mode);setVal('fx_power',Number(el('fxPower26').value));setVal('fx_radius',Number(el('fxRadius26').value));setProgress(0);playing=true;started=performance.now();const baseDuration=mode>=3&&mode<=4?3600:mode===5?5200:mode===6?5400:4300;const duration=baseDuration/Number(el('fxSpeed27').value);if(mode===6)startFireFx(Number(el('fxPower26').value), Number(el('fxSpeed27').value), Number(el('fxHeight34').value), duration);
+  function tick(now){if(!playing)return;const p=Math.min(1,(now-started)/duration);const eased=p*p*(3-2*p);setProgress(eased);if(p<1){frame=requestAnimationFrame(tick)}else{playing=false;frame=0;if(mode===3||mode===4)setProgress(1);else setProgress(0);if(mode===6){xyzFire44Stop();stopFireFx(true);setVal('fx_mode',0);el('fxStatus26').textContent='FIRE завершён — частицы потухли, модель восстановлена.'}else{el('fxStatus26').textContent=mode===3||mode===4?'Проявление завершено.':'Эффект завершён — модель собрана.'}}}
+  frame=requestAnimationFrame(tick)
+ }
+ window.xyzFX27={get mode(){return mode},play,reset};
+ document.querySelectorAll('[data-fxmode]').forEach(b=>b.addEventListener('click',()=>selectMode(Number(b.dataset.fxmode))));
+ el('fxPlay26').addEventListener('click',play);el('fxReset26').addEventListener('click',reset);
+ el('fxScaleFire35').addEventListener('change',()=>{fireFxScaleEnabled=el('fxScaleFire35').checked;if(fireFxActive)fireFxCameraStart=Math.max(0.00001,distance)});el('fx3D36').addEventListener('change',()=>{fireFx3DEnabled=el('fx3D36').checked;if(fireFxActive)fireFxCameraStart=Math.max(0.00001,distance)});
+ for(const id of ['fxPower26','fxRadius26','fxSpeed27','fxHeight34'])el(id).addEventListener('input',()=>{syncLabels();if(id==='fxPower26')setVal('fx_power',Number(el(id).value));if(id==='fxRadius26')setVal('fx_radius',Number(el(id).value))});
+ const lab=el('fxLab26'),show=el('fxShow26'),guest=el('fxGuestPlay27');
+ el('fxHide26').addEventListener('click',()=>{lab.style.display='none';show.style.display=(!visitor||labAllowed)?'block':'none'});
+ show.addEventListener('click',()=>{lab.style.display='block';show.style.display='none';const h=el('help');h.classList.add('hidden');el('helpToggle').setAttribute('aria-expanded','false')});
+ el('helpToggle').addEventListener('click',()=>{if(lab.style.display==='block'){lab.style.display='none';if(!visitor||labAllowed)show.style.display='block'}});
+ guest.addEventListener('click',play);
+ if(visitor){lab.style.display='none';show.style.display=labAllowed?'block':'none';guest.style.display=permitted&&initial?.ef?'block':'none';el('shareFx27').checked=!!(permitted&&initial?.ef);el('shareFxLab29').checked=labAllowed}else{lab.style.display='none';show.style.display='block';guest.style.display='block'}
+ syncLabels();
+ window.addEventListener('pagehide',()=>{if(frame)cancelAnimationFrame(frame);stopFireFx(true);xyzFire39Stop()});
+ const poll=setInterval(()=>{if(sceneReady()){clearInterval(poll);setVal('fx_mode',0);setVal('fx_progress',0);el('fxStatus26').textContent='Готово — выбери эффект и PLAY FX.'}},250);
+ setTimeout(()=>clearInterval(poll),30000);
+})();
+
+
+// v44: actual DOM Canvas is inside a 3D iframe hotspot, NOT projected from screen.
+let xyzFire44Active=false, xyzFire44Frame=0, xyzFire44StartAt=0, xyzFire44Length=0, xyzFire44Power=1, xyzFire44Height=1;
+function xyzFire44Stop(){
+  xyzFire44Active=false;
+  if(xyzFire44Frame)cancelAnimationFrame(xyzFire44Frame);xyzFire44Frame=0;
+  if(k)try{k.set('hotspot[xyz_fire44_host].visible',false)}catch(e){}
+}
+function xyzFire44Start(duration,power,height){
+  xyzFire44Stop();
+  if(!k||height<=0)return;
+  xyzFire44Active=true;xyzFire44StartAt=performance.now();xyzFire44Length=duration;xyzFire44Power=power;xyzFire44Height=height;
+  try{k.set('hotspot[xyz_fire44_host].visible',true)}catch(e){}
+  const update=now=>{
+    if(!xyzFire44Active)return;
+    // Consistent image/world-space point; same anchor as the successful v39 3D hotspots.
+    const base=xyzFire40Base();
+    try{
+      k.set('hotspot[xyz_fire44_host].tx',base.x);
+      k.set('hotspot[xyz_fire44_host].ty',base.y);
+      k.set('hotspot[xyz_fire44_host].tz',base.z);
+      k.set('hotspot[xyz_fire44_host].alpha', Math.min(1,Math.sin(Math.PI*Math.min(1,(now-xyzFire44StartAt)/xyzFire44Length))*1.4));
+      k.set('hotspot[xyz_fire44_host].scale', Math.max(.025,Math.min(1.8,.18*xyzFire44Power*(.75+xyzFire44Height*.25))));
+    }catch(e){}
+    if(now<xyzFire44StartAt+xyzFire44Length){xyzFire44Frame=requestAnimationFrame(update)}else xyzFire44Stop();
+  };
+  xyzFire44Frame=requestAnimationFrame(update);
+}
+
+// v40: 3D FIRE PARTICLES in krpano world-space, anchored to the local splat origin (0,0,0).
+let xyzFire39Frame=0, xyzFire39Active=false, xyzFire39Emitting=false, xyzFire39Start=0, xyzFire39Duration=0, xyzFire39Prev=0;
+const xyzFire40Flames=[], xyzFire40Sparks=[], xyzFire40Smoke=[];
+const XYZ_FIRE40_FLAME_COUNT=36, XYZ_FIRE40_SPARK_COUNT=22, XYZ_FIRE40_SMOKE_COUNT=14;
+function xyzFire40Base(){
+  if(!k) return {x:0,y:0,z:0};
+  const getV=a=>{ try{ return Number(k.get('image.splats.t'+a))||0; }catch(e){ return 0; } };
+  return {x:getV('x'), y:getV('y'), z:getV('z')};
+}
+function xyzFire40SetVisible(name, v){ try{ k.set('hotspot['+name+'].visible', !!v); }catch(e){} }
+function xyzFire40Set(name, prop, v){ try{ k.set('hotspot['+name+'].'+prop, v); }catch(e){} }
+function xyzFire40HideAll(){
+  if(!k) return;
+  for(let i=0;i<XYZ_FIRE40_FLAME_COUNT;i++) xyzFire40SetVisible('xyz_fire40_f_'+i, false);
+  for(let i=0;i<XYZ_FIRE40_SPARK_COUNT;i++) xyzFire40SetVisible('xyz_fire40_k_'+i, false);
+  for(let i=0;i<XYZ_FIRE40_SMOKE_COUNT;i++) xyzFire40SetVisible('xyz_fire40_s_'+i, false);
+}
+function xyzFire40ResetParticle(p, type){
+  const h=Math.max(0, Number(document.getElementById('fxHeight34').value)||1);
+  const power=Math.max(0.2, Number(document.getElementById('fxPower26').value)||1);
+  if(type==='flame'){
+    p.x=(Math.random()-0.5)*(1.05+power*0.60);
+    p.y=(Math.random()-0.5)*(0.58+power*0.28);
+    p.z=0.02+Math.random()*0.18;
+    p.vx=(Math.random()-0.5)*(0.08+power*0.05);
+    p.vy=(Math.random()-0.5)*(0.04+power*0.02);
+    p.vz=(0.42+Math.random()*1.05)*(0.60+h*0.62);
+    p.life=0; p.max=0.65+Math.random()*0.55;
+    p.scale=(0.055+Math.random()*0.065)*(0.65+power*0.28);
+    p.alpha=0.22+Math.random()*0.24;
+    p.phase=Math.random()*Math.PI*2;
+  }else if(type==='spark'){
+    p.x=(Math.random()-0.5)*0.22;
+    p.y=(Math.random()-0.5)*0.10;
+    p.z=0.05+Math.random()*0.10;
+    p.vx=(Math.random()-0.5)*(0.18+power*0.10);
+    p.vy=(Math.random()-0.5)*(0.10+power*0.05);
+    p.vz=(0.85+Math.random()*1.8)*(0.6+h*0.55);
+    p.life=0; p.max=0.35+Math.random()*0.45;
+    p.scale=(0.016+Math.random()*0.024)*(0.65+power*0.25);
+    p.alpha=0.65+Math.random()*0.25;
+    p.phase=Math.random()*Math.PI*2;
+  }else if(type==='smoke'){
+    p.x=(Math.random()-0.5)*(0.28+power*0.16);
+    p.y=(Math.random()-0.5)*(0.12+power*0.08);
+    p.z=0.18+Math.random()*0.22;
+    p.vx=(Math.random()-0.5)*(0.05+power*0.03);
+    p.vy=(Math.random()-0.5)*(0.03+power*0.02);
+    p.vz=(0.12+Math.random()*0.28)*(0.55+h*0.35);
+    p.life=0; p.max=1.35+Math.random()*1.45;
+    p.scale=(0.09+Math.random()*0.12)*(0.75+power*0.18);
+    p.alpha=0.10+Math.random()*0.12;
+    p.phase=Math.random()*Math.PI*2;
+  }
+}
+function xyzFire40EnsureArrays(){
+  if(xyzFire40Flames.length===0){ for(let i=0;i<XYZ_FIRE40_FLAME_COUNT;i++){ const p={name:'xyz_fire40_f_'+i}; xyzFire40ResetParticle(p,'flame'); p.life=Math.random()*p.max; xyzFire40Flames.push(p);} }
+  if(xyzFire40Sparks.length===0){ for(let i=0;i<XYZ_FIRE40_SPARK_COUNT;i++){ const p={name:'xyz_fire40_k_'+i}; xyzFire40ResetParticle(p,'spark'); p.life=Math.random()*p.max; xyzFire40Sparks.push(p);} }
+  if(xyzFire40Smoke.length===0){ for(let i=0;i<XYZ_FIRE40_SMOKE_COUNT;i++){ const p={name:'xyz_fire40_s_'+i}; xyzFire40ResetParticle(p,'smoke'); p.life=Math.random()*p.max; xyzFire40Smoke.push(p);} }
+}
+function xyzFire39Stop(){
+  xyzFire39Active=false; xyzFire39Emitting=false;
+  if(xyzFire39Frame) cancelAnimationFrame(xyzFire39Frame); xyzFire39Frame=0; xyzFire39Prev=0;
+  xyzFire40HideAll();
+}
+function xyzFire39StartFx(duration){
+  xyzFire39Stop(); xyzFire40EnsureArrays(); xyzFire39Active=true; xyzFire39Emitting=true; xyzFire39Start=performance.now(); xyzFire39Duration=duration; xyzFire39Prev=0;
+  function updateArray(arr,type,dt,base,fade){
+    const h=Math.max(0, Number(document.getElementById('fxHeight34').value)||1);
+    const power=Math.max(0.2, Number(document.getElementById('fxPower26').value)||1);
+    for(const p of arr){
+      p.life += dt;
+      if(p.life>=p.max){
+        if(xyzFire39Emitting){ xyzFire40ResetParticle(p,type); }
+        else { xyzFire40SetVisible(p.name,false); continue; }
+      }
+      const t=p.life/p.max;
+      const turb=Math.sin((performance.now()*0.0024)+p.phase+p.z*5.0);
+      if(type==='flame'){
+        p.vx += turb*0.012*dt; p.vy += Math.cos((performance.now()*0.0017)+p.phase)*0.006*dt;
+        p.vx*=0.985; p.vy*=0.985;
+      }else if(type==='spark'){
+        p.vx += turb*0.006*dt; p.vy += Math.cos((performance.now()*0.0014)+p.phase)*0.003*dt;
+        p.vx*=0.992; p.vy*=0.992;
+      }else{
+        p.vx += turb*0.004*dt; p.vy += Math.cos((performance.now()*0.0012)+p.phase)*0.0025*dt;
+        p.vx*=0.995; p.vy*=0.995;
+      }
+      p.x += p.vx*dt; p.y += p.vy*dt; p.z += p.vz*dt;
+      let alpha=0, scale=0;
+      if(type==='flame'){
+        const env=Math.sin(Math.PI*Math.min(1,Math.max(0,t)));
+        alpha=env*p.alpha*fade; scale=p.scale*(0.55+0.90*env)*(0.65+h*0.35)*power;
+      }else if(type==='spark'){
+        const env=(1-t); alpha=Math.max(0,env)*p.alpha*fade; scale=p.scale*(0.85+0.45*env)*(0.75+h*0.25)*power;
+      }else{
+        const env=Math.max(0,1-t); alpha=env*p.alpha*fade; scale=p.scale*(0.7+1.8*t)*(0.9+h*0.08)*(0.9+power*0.08);
+      }
+      xyzFire40Set(p.name,'tx', base.x + p.x);
+      xyzFire40Set(p.name,'ty', base.y + p.y);
+      xyzFire40Set(p.name,'tz', base.z + p.z);
+      xyzFire40Set(p.name,'visible', alpha>0.008 && h>0);
+      xyzFire40Set(p.name,'alpha', Math.max(0,Math.min(1,alpha)));
+      xyzFire40Set(p.name,'scale', Math.max(0.001,scale));
+      xyzFire40Set(p.name,'rotate',0); // never orbit/spin textures
+    }
+  }
+  function tick(now){
+    if(!xyzFire39Active) return;
+    if(!xyzFire39Prev) xyzFire39Prev=now;
+    const dt=Math.min(0.05,(now-xyzFire39Prev)/1000); xyzFire39Prev=now;
+    const p=Math.min(1,(now-xyzFire39Start)/xyzFire39Duration);
+    if(p>=1) xyzFire39Emitting=false;
+    const fade=xyzFire39Emitting ? Math.pow(Math.max(0,Math.sin(Math.PI*p)),0.45) : Math.max(0,1-((now-(xyzFire39Start+xyzFire39Duration))/900));
+    const base=xyzFire40Base();
+    updateArray(xyzFire40Flames,'flame',dt,base,fade);
+    updateArray(xyzFire40Sparks,'spark',dt,base,fade);
+    updateArray(xyzFire40Smoke,'smoke',dt,base,fade*0.95);
+    const alive = xyzFire40Flames.some(p=>p.life<p.max) || xyzFire40Sparks.some(p=>p.life<p.max) || xyzFire40Smoke.some(p=>p.life<p.max);
+    if(xyzFire39Emitting || fade>0.01 || alive){ xyzFire39Frame=requestAnimationFrame(tick); }
+    else { xyzFire39Stop(); }
+  }
+  xyzFire39Frame=requestAnimationFrame(tick);
+}
+</script>
+</body></html>
