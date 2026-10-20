@@ -1,6 +1,6 @@
 <krpano version="1.24" title="3XyzMedia RGB Bridge - Gaussian Viewer v4.14">
     <image>
-        <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/SOY2.ply"
+        <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/K_6.com.ply"
                 scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
                 rotationorder="YXZ" antialias="0.30"/>
     </image>
