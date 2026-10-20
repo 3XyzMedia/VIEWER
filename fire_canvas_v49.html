@@ -1,0 +1,103 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html,body{margin:0;width:100%;height:100%;background:transparent!important;overflow:hidden}canvas{display:block;width:100%;height:100%;background:transparent}</style></head>
+<body><canvas id="fire" width="700" height="900"></canvas><script>
+'use strict';
+const cv=document.getElementById('fire'), ctx=cv.getContext('2d',{alpha:true});
+const tongues=[], sparks=[]; let last=0;
+const rand=(a,b)=>a+Math.random()*(b-a);
+function newTongue(){
+  const side=(Math.random()*2-1);
+  return {x:rand(-125,125), y:0, vx:side*rand(0.08,0.42), vy:rand(2.8,6.5), life:rand(0.55,1.25), max:0, w:rand(18,42), h:rand(90,210), skew:rand(-0.18,0.18), phase:rand(0,6.28318), core:Math.random()*0.8+0.2};
+}
+function newSpark(){ return {x:rand(-120,120), y:0, vx:rand(-1.6,1.6), vy:rand(4.0,10.0), life:rand(0.45,1.15), max:0, r:rand(1.2,3.4)}; }
+
+function drawLog(x,y,w,h,rot){
+  ctx.save();
+  ctx.translate(x,y); ctx.rotate(rot);
+  const grad=ctx.createLinearGradient(-w*0.5,0,w*0.5,0);
+  grad.addColorStop(0,'rgba(58,28,12,0.95)');
+  grad.addColorStop(0.5,'rgba(96,52,22,0.98)');
+  grad.addColorStop(1,'rgba(44,20,8,0.95)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  const r=Math.min(h*0.5,18);
+  ctx.moveTo(-w*0.5+r,-h*0.5); ctx.lineTo(w*0.5-r,-h*0.5); ctx.quadraticCurveTo(w*0.5,-h*0.5,w*0.5,h*0.0-r);
+  ctx.quadraticCurveTo(w*0.5,h*0.5,w*0.5-r,h*0.5); ctx.lineTo(-w*0.5+r,h*0.5); ctx.quadraticCurveTo(-w*0.5,h*0.5,-w*0.5,h*0.0-r);
+  ctx.quadraticCurveTo(-w*0.5,-h*0.5,-w*0.5+r,-h*0.5); ctx.fill();
+  ctx.strokeStyle='rgba(25,10,4,0.45)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.restore();
+}
+function ellipseGlow(x,y,w,h,a){
+  ctx.save(); ctx.translate(x,y); ctx.scale(1,h/Math.max(1,w));
+  const g=ctx.createRadialGradient(0,0,0,0,0,w);
+  g.addColorStop(0,`rgba(255,255,230,${a})`);
+  g.addColorStop(0.12,`rgba(255,234,150,${a*0.98})`);
+  g.addColorStop(0.36,`rgba(255,154,44,${a*0.80})`);
+  g.addColorStop(0.76,`rgba(214,48,10,${a*0.34})`);
+  g.addColorStop(1,'rgba(70,0,0,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,w,0,Math.PI*2); ctx.fill(); ctx.restore();
+}
+function draw(now){
+ const dt=Math.min(0.05,(now-(last||now))/1000); last=now;
+ const W=700,H=900,cx=W*0.5,baseY=H*0.56;
+ ctx.clearRect(0,0,W,H);
+ ctx.save();ctx.beginPath();ctx.rect(0,0,W,baseY+20);ctx.clip();
+ // birth
+ if(tongues.length<90) for(let i=0;i<5;i++){ let p=newTongue(); p.max=p.life; tongues.push(p); }
+ if(sparks.length<80) for(let i=0;i<4;i++){ let s=newSpark(); s.max=s.life; sparks.push(s); }
+ // base glow
+ ctx.globalCompositeOperation='lighter';
+ ellipseGlow(cx, baseY-8, 118, 44, 0.24);
+ ellipseGlow(cx, baseY-16, 68, 120, 0.14);
+ // tongues
+ for(let i=tongues.length-1;i>=0;i--){
+   const p=tongues[i]; p.life-=dt; if(p.life<=0){tongues.splice(i,1); continue;}
+   const f=p.life/p.max, age=1-f;
+   p.phase += dt*(2.2+age*4.2);
+   p.x += (p.vx + Math.sin(p.phase)*0.34 + p.skew*age)*dt*62;
+   p.y += p.vy*dt*60;
+   const x=cx+p.x, y=baseY-p.y;
+   const h=p.h*(0.40+0.95*f), w=p.w*(0.55+0.55*f);
+   const alpha=0.12 + 0.24*f;
+   ctx.save();
+   ctx.translate(x,y); ctx.rotate(p.skew + Math.sin(p.phase)*0.10);
+   ellipseGlow(0,0,w*1.05,h,alpha*0.85);
+   ellipseGlow(0,-h*0.08,w*0.62,h*0.58,alpha*1.1*p.core);
+   ellipseGlow(0,-h*0.14,w*0.28,h*0.26,alpha*0.95*p.core);
+   ctx.restore();
+ }
+ // sparks
+ for(let i=sparks.length-1;i>=0;i--){
+   const s=sparks[i]; s.life-=dt; if(s.life<=0){sparks.splice(i,1); continue;}
+   s.x += s.vx*dt*60; s.y += s.vy*dt*60;
+   const a=0.15 + 0.85*(s.life/s.max), x=cx+s.x, y=baseY-s.y;
+   const g=ctx.createRadialGradient(x,y,0,x,y,s.r*4.5);
+   g.addColorStop(0,`rgba(255,245,200,${a})`); g.addColorStop(0.4,`rgba(255,182,70,${a*0.82})`); g.addColorStop(1,'rgba(255,120,20,0)');
+   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,s.r*4.5,0,Math.PI*2); ctx.fill();
+ }
+
+ // coals / logs to soften the lower edge without heavy masks
+ ellipseGlow(cx-52, baseY+16, 58, 28, 0.18);
+ ellipseGlow(cx+38, baseY+18, 64, 30, 0.16);
+ ellipseGlow(cx, baseY+10, 84, 34, 0.12);
+ ctx.globalCompositeOperation='source-over';
+ drawLog(cx-62, baseY+24, 132, 20, -0.18);
+ drawLog(cx+56, baseY+28, 126, 18, 0.16);
+ drawLog(cx, baseY+34, 156, 18, 0.03);
+ ctx.globalCompositeOperation='lighter';
+ for(let i=0;i<10;i++){
+   const ex=cx-78+i*17 + Math.sin((now*0.002)+i)*3;
+   const ey=baseY+14 + (i%3)*7;
+   const er=4 + (i%4);
+   const eg=ctx.createRadialGradient(ex,ey,0,ex,ey,er*3.5);
+   eg.addColorStop(0,'rgba(255,230,150,0.55)');
+   eg.addColorStop(0.45,'rgba(255,120,25,0.32)');
+   eg.addColorStop(1,'rgba(255,80,10,0)');
+   ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(ex,ey,er*3.5,0,Math.PI*2); ctx.fill();
+ }
+ ctx.globalCompositeOperation='source-over';ctx.restore();
+ requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script></body></html>
