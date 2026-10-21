@@ -1,0 +1,21 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>3XyzMedia LITE</title>
+<style>*{box-sizing:border-box}html,body,#pano{height:100%;width:100%;margin:0;background:#05070b;overflow:hidden}body{font:14px Arial,sans-serif;color:white}#hud{position:absolute;z-index:30;top:10px;left:10px;right:10px;pointer-events:none;display:flex;gap:8px;align-items:start}#hud>*{pointer-events:auto}.glass{background:rgba(7,12,20,.70);border:1px solid #334353;color:white;padding:9px 12px;border-radius:10px;backdrop-filter:blur(5px)}button{cursor:pointer}#status{font-size:12px;line-height:1.4;max-width:350px;word-break:break-word}#msg{display:none;position:absolute;inset:auto 12px 22px;z-index:32;padding:15px;background:#251921;color:#ffd4da;border:1px solid #894653;border-radius:12px;max-height:38vh;overflow:auto}#msg a{color:#91dfff}@media(max-width:500px){.glass{padding:7px 9px}#status{font-size:11px}}</style></head>
+<body><div id="pano"></div><div id="hud"><div class="glass" id="status">3XyzMedia LITE — загрузка…</div><button class="glass" id="reset" title="Исходный вид">⌂</button><button class="glass" id="share" title="Копировать ссылку">🔗</button></div><div id="msg"></div>
+<script src="krpano.js"></script><script>
+'use strict';
+const query=new URLSearchParams(location.search),id=query.get('id')||'soy';let preset=null,k=null,ready=false;
+const status=document.getElementById('status'),msg=document.getElementById('msg');
+function err(s){status.textContent='Ошибка загрузки';msg.style.display='block';msg.textContent=s;}
+function validateXmlPath(s){if(typeof s!=='string'||!/^[-a-zA-Z0-9_./]+\.xml$/.test(s)||s.includes('..')||s.startsWith('/'))throw Error('Недопустимый XML путь');return s}
+function normalize(p){if(!p||typeof p!=='object')throw Error('Некорректный пресет');p.xml=validateXmlPath(p.xml);return p}
+function decoder(s){let a=s.replace(/-/g,'+').replace(/_/g,'/');while(a.length%4)a+='=';return JSON.parse(decodeURIComponent(escape(atob(a))))}
+async function loadPreset(){if(query.has('p'))return normalize(decoder(query.get('p')));if(!/^[a-zA-Z0-9_-]{1,48}$/.test(id))throw Error('Некорректный ID');const url='presets/'+id+'.json';const r=await fetch(url,{cache:'no-cache'});if(!r.ok)throw Error('Не найден пресет '+url+' (HTTP '+r.status+'). Сначала загрузи его в GitHub.');return normalize(await r.json())}
+function applySavedView(){if(!k||!preset)return;const s=preset.state||{};try{const v=s.o||[0,0,0];if(v.length>=2){k.set('view.hlookat',Number(v[0])||0);k.set('view.vlookat',Number(v[1])||0)}if(Number.isFinite(Number(s.d))&&Number(s.d)>0)k.set('view.tz',Number(s.d));}catch(e){console.warn('Preset view partially unsupported:',e)}}
+async function start(){try{preset=await loadPreset();if(typeof embedpano!=='function')throw Error('Нет krpano.js рядом с index.html');status.textContent='3XyzMedia LITE · '+(preset.title||id);
+ embedpano({target:'pano',xml:preset.xml,html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:function(viewer){k=viewer;ready=true;applySavedView();status.textContent='3XyzMedia LITE · '+(preset.title||id);}});
+ }catch(e){err(e.message)}}
+document.getElementById('reset').onclick=()=>{if(k){applySavedView()}};
+document.getElementById('share').onclick=async()=>{try{await navigator.clipboard.writeText(location.href);status.textContent='Ссылка скопирована ✓'}catch(e){prompt('Скопируй ссылку:',location.href)}};
+window.addEventListener('error',e=>{if(!ready&&String(e.message).includes('krpano'))err('Ошибка движка krpano. Проверь наличие krpano.js')});
+start();
+</script></body></html>

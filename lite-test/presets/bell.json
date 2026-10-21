@@ -1,0 +1,30 @@
+{
+  "id": "bell",
+  "title": "Колокол — Releases CORS TEST",
+  "xml": "scene_lite_bell.xml",
+  "state": {
+    "d": 200,
+    "u": "Z",
+    "o": [
+      0,
+      0,
+      0
+    ],
+    "p": [
+      0,
+      0,
+      0
+    ],
+    "m": [
+      0,
+      0,
+      0
+    ]
+  },
+  "features": {
+    "tour": false,
+    "video": false,
+    "fx": false,
+    "settings": false
+  }
+}
