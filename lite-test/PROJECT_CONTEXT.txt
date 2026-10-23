@@ -1,0 +1,1 @@
+3XyzMedia LOGO MORPH v3 | Pilot. Source: v2 + axis correction. v2 rendered glyph edge-on because TXT target Z(up) was given to shader Z(depth). Now map [X,Z,-Y] with [0.60,0.68,0.70] scales. Work studio v6 not changed. Only 2048 sampled points. Need confirm krpano display and then test full 32k via GPU data mechanism.
