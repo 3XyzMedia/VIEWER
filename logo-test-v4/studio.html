@@ -49,7 +49,13 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
 #fps{position:fixed;right:18px;bottom:16px;z-index:40;color:rgba(255,255,255,.45);font:10px Consolas,monospace;pointer-events:none}
 @media(max-width:600px){#brand{top:49px;left:7px;max-width:calc(100vw - 32px);padding:5px 8px;border-color:rgba(80,240,255,.42);box-shadow:0 0 13px rgba(45,220,255,.18),inset 0 0 10px rgba(60,210,255,.07);font-size:13px;letter-spacing:.2px}#subtitle,#contact{display:none}}
 @media(max-width:600px){#brand.expanded #subtitle,#brand.expanded #contact{display:block}#help{max-width:calc(100vw - 30px);pointer-events:auto}}
-#logoMorphTest.collapsed{width:auto!important;min-width:220px}#logoMorphCollapse{float:right;margin-left:8px;padding:2px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.18);background:#163445;color:#fff;cursor:pointer;font-weight:700}#logoMorphHeader{display:flex;align-items:center;justify-content:space-between;gap:8px}#logoMorphHeader strong{display:block;line-height:1.2}</style>
+#logoMorphTest.collapsed{width:auto!important;min-width:220px}#logoMorphCollapse{float:right;margin-left:8px;padding:2px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.18);background:#163445;color:#fff;cursor:pointer;font-weight:700}#logoMorphHeader{display:flex;align-items:center;justify-content:space-between;gap:8px}#logoMorphHeader strong{display:block;line-height:1.2}
+#logoMorphShow{display:none;position:fixed;z-index:92;left:226px;bottom:16px;height:32px;padding:0 10px;border-radius:9px;border:1px solid #26caed;background:rgba(5,20,32,.92);color:#80f7ff;font-weight:bold;cursor:pointer}
+#logoMorphCollapse{flex:none;font-size:16px;line-height:20px;min-width:27px}
+#fxGuestPlay27{left:78px!important}
+#fxShow26{left:149px!important}
+@media(max-width:600px){#helpToggle{left:16px!important}#fxGuestPlay27{left:73px!important}#fxShow26{left:140px!important}#logoMorphShow{left:210px!important}#logoMorphTest{max-height:calc(100dvh - 160px);overflow-y:auto}}
+</style>
 <meta name="description" content="3XyzMedia RGB Bridge v22 — share/flight/audio corrections and optimized effects.">
 <style id="fxLabStyle">
 #fxLab26{display:none;position:fixed;left:16px;bottom:96px;z-index:92;width:min(318px,calc(100vw - 32px));max-height:65vh;overflow:auto;background:rgba(5,11,25,.96);border:1px solid #37d6ff;border-radius:14px;padding:12px;color:#e9f9ff;font:12px Arial,sans-serif;box-shadow:0 0 24px rgba(24,189,255,.35);box-sizing:border-box}
@@ -261,7 +267,7 @@ let k=null;
 // Основной параметр — xml. Для совместимости принимаем и старый параметр scene.
 // Ссылки без обоих параметров по-прежнему открывают scene.xml.
 const initialParams = new URLSearchParams(location.search);
-const sceneXml = initialParams.get('xml') || initialParams.get('scene') || 'scene_logo_v4.xml';
+const sceneXml = initialParams.get('xml') || initialParams.get('scene') || (navigator.maxTouchPoints>0 && window.innerWidth<900?'scene_logo_v5_mobile.xml':'scene_logo_v5.xml');
 
 // Screen-space weather, stars and meteors. Overlays leave model coordinates untouched.
 const snowCanvas = document.getElementById('snowOverlay');
@@ -1618,14 +1624,16 @@ function xyzFire39StartFx(duration){
 </script>
 
 <div id="logoMorphTest" style="position:fixed;z-index:999999;top:165px;left:12px;width:min(355px,calc(100vw - 28px));padding:14px;box-sizing:border-box;border:1px solid #2596bb;background:rgba(4,12,22,.95);border-radius:12px;color:#e3faff;font:13px Arial,sans-serif">
-<div id="logoMorphHeader"><strong>⚛ LOGO MORPH v4 · отдельный тест</strong><button id="logoMorphCollapse" type="button" aria-expanded="true" title="Свернуть LOGO MORPH">—</button></div>
+<div id="logoMorphHeader"><strong>⚛ LOGO MORPH v5 · отдельный тест</strong><button id="logoMorphCollapse" type="button" aria-expanded="true" title="Закрыть LOGO MORPH">×</button></div>
 <div id="logoMorphBody">
-<div style="font-size:11px;margin:6px 0;color:#a9c6d5">Камера — оригинальная STUDIO. Морф не тронут по логике v3: добавлены только безопасные UI-правки v4. Тест 2048 координат; не все 32 000.</div>
+<label style="display:block;margin:6px 0;font-size:12px"><input type="checkbox" id="logoMirrorX" checked> Зеркально исправить текст</label>
+<div style="font-size:11px;margin:6px 0;color:#a9c6d5">ПК: 2048 точек. Смартфон: облегчённая процедурная надпись для защиты WebGL (это не полный 3D-логотип).</div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px">
 <button id="logoV2Go" type="button" style="padding:8px;background:#176d90;color:white;border:0;border-radius:6px;cursor:pointer">▶ Модель → логотип → модель</button>
 <button id="logoV2Reset" type="button" style="padding:8px;background:#244354;color:white;border:0;border-radius:6px;cursor:pointer">↺ Вернуть</button>
 </div>
 <div style="font-size:11px;margin:6px 0"><label><input type="checkbox" id="logoDepthFlip"> Развернуть глубину логотипа</label></div><div style="margin:8px 0">Морфинг: <span id="logoV2Num">0%</span></div><input id="logoV2Slider" type="range" min="0" max="100" value="0" style="width:100%">
 <div id="logoV2Status" style="font-size:11px;color:#a5d7e7">Без эффекта — исходная модель</div></div></div>
-<script src="logo_morph_v4.js"></script>
+<button id="logoMorphShow" type="button" title="Открыть LOGO MORPH">⚛ MORPH</button>
+<script src="logo_morph_v5.js"></script>
 </body></html>

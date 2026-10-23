@@ -1,19 +1,14 @@
-3XyzMedia LOGO MORPH TEST v4
+3XyzMedia LOGO MORPH v5 — безопасный тест
 
-Что изменено в v4:
-1. Не менял логику morph v3 — чтобы ничего не испортить.
-2. Кнопка ⚛ LAB сдвинута правее на смартфоне.
-3. Добавлена кнопка сворачивания блока LOGO MORPH.
-4. studio.html по умолчанию открывает scene_logo_v4.xml и logo_morph_v4.js.
+Загрузи файлы ZIP в VIEWER/logo-test-v5/
+krpano.js используется по абсолютному пути /VIEWER/krpano.js, копировать его не нужно.
+Открыть: https://3xyzmedia.github.io/VIEWER/logo-test-v5/studio.html
 
-Что загрузить в GitHub в папку VIEWER/logo-test-v4/:
-- studio.html
-- scene_logo_v4.xml
-- logo_morph_v4.js
-- fire_canvas_v56.html
-- fire_3d_v40.png
-- smoke_3d_v40.png
-
-Важно:
-- krpano.js не кладется в папку logo-test-v4, если он уже лежит в /VIEWER/krpano.js
-- путь к модели в scene_logo_v4.xml сейчас: https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/SOY2.ply
+Изменения:
+- Настоящая кнопка × закрывает окно, ⚛ MORPH справа от LAB открывает вновь.
+- Нижние кнопки i, FX, LAB, MORPH равномерно разнесены на смартфоне.
+- Отдельный более лёгкий mobile GLSL без 2048 встроенных ветвей, чтобы снизить риск WebGL context lost.
+- Зеркальная ориентация текста — галочка по умолчанию включена.
+- На телефоне геометрия упрощённая, не полная копия логотипа; это компромисс производительности.
+- PC 2048 target остался, остальные FX и камера не переписаны.
+- Если WebGL context lost повторится, дальше нужно профилировать GPU и менять сам метод передачи 3D-target.
