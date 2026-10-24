@@ -278,8 +278,8 @@ const initialParams = new URLSearchParams(location.search);
 const xyzMobile = (navigator.maxTouchPoints>0 && window.innerWidth<900);
 const requestedSceneXml = initialParams.get('xml') || initialParams.get('scene');
 const sceneXml = xyzMobile && (!requestedSceneXml || /^scene_logo_v(?:5|6)(?:_mobile)?\.xml$/.test(requestedSceneXml))
-  ? 'scene_logo_v6_mobile.xml'
-  : (requestedSceneXml || 'scene_logo_v6.xml');
+  ? 'scene_logo_v7_mobile.xml'
+  : (requestedSceneXml || 'scene_logo_v7.xml');
 
 // Screen-space weather, stars and meteors. Overlays leave model coordinates untouched.
 const snowCanvas = document.getElementById('snowOverlay');
@@ -1051,7 +1051,14 @@ function currentShareUrl(){
   // Старый параметр scene удаляем, чтобы он не расходился с xml.
   url.searchParams.set('xml', sceneXml);
   url.searchParams.delete('scene');
-  url.searchParams.set('v', encodeState(state()));
+  const shareState = state();
+  shareState.logoXYZ = [
+    Number(document.getElementById('logoXRotation').value),
+    Number(document.getElementById('logoYRotation').value),
+    Number(document.getElementById('logoZRotation').value)
+  ];
+  shareState.logoZOffset = Number(document.getElementById('logoZOffset').value);
+  url.searchParams.set('v', encodeState(shareState));
   url.searchParams.set('ui', document.getElementById('shareSettings')?.checked === false ? 'locked' : 'full');
   url.searchParams.set('tourui', document.getElementById('shareTour').checked ? '1' : '0');
   url.searchParams.set('videoui', document.getElementById('shareVideo').checked ? '1' : '0');
@@ -1061,6 +1068,9 @@ function currentShareUrl(){
   url.searchParams.set('morphz', document.getElementById('logoZRotation').value);
   url.searchParams.set('morphx', document.getElementById('logoXRotation').value);
   url.searchParams.set('morphy', document.getElementById('logoYRotation').value);
+  url.searchParams.set('morphmirror', document.getElementById('logoMirrorX').checked ? '1' : '0');
+  url.searchParams.set('morphdepth', document.getElementById('logoDepthFlip').checked ? '1' : '0');
+  url.searchParams.set('morphheight', document.getElementById('logoZOffset').value);
 
   return url.toString();
 }
@@ -1078,6 +1088,27 @@ function copyLink(){
   copyText(finalUrl.href).then(()=>showToast(full?'Ссылка STUDIO скопирована ✓':'Ссылка зрителю скопирована ✓'));
 }
 function applyState(st){if(!st)return;
+  {const el=document.getElementById('logoZOffset');
+   const qp=new URLSearchParams(location.search).get('morphheight');
+   const val=Number(qp===null ? (st.logoZOffset??0) : qp);
+   if(el && Number.isFinite(val)){
+     el.value=String(Math.max(-150,Math.min(150,val)));
+     const lab=document.getElementById('logoZOffsetValue');
+     if(lab)lab.textContent=Number(el.value).toFixed(1)+' ед.';
+   }}
+  if(Array.isArray(st.logoXYZ) && st.logoXYZ.length===3) {
+    ['X','Y','Z'].forEach((axis, i)=>{
+      const el=document.getElementById('logo'+axis+'Rotation');
+      const qp=new URLSearchParams(location.search).get('morph'+axis.toLowerCase());
+      const v=Number(qp===null ? st.logoXYZ[i] : qp);
+      if(el && Number.isFinite(v)) {
+        el.value=String(Math.max(0,Math.min(360,Math.round(v))));
+        const label=document.getElementById('logo'+axis+'RotationValue');
+        if(label)label.textContent=el.value+'°';
+      }
+    });
+    window.xyzMorphSharedAngles=st.logoXYZ.slice();
+  }
   stopPlay();playAngle=0;
   if(st.u&&upAxisRotations[st.u])upAxis=st.u;
   pivot={x:Number(st.p[0])||0,y:Number(st.p[1])||0,z:Number(st.p[2])||0};yaw=Number(st.o[0])||0;pitch=Number(st.o[1])||0;roll=Number(st.o[2])||0;distance=Number(st.d)||BASE_DISTANCE;pan={x:Number(st.m[0])||0,y:Number(st.m[1])||0,z:Number(st.m[2])||0};
@@ -1096,7 +1127,7 @@ function applyState(st){if(!st)return;
   if(Array.isArray(st.tour)){tourPoints=st.tour.filter(p=>Array.isArray(p)&&p.length===11&&p.every(Number.isFinite)).slice(0,100);refreshTourUI()}if(st.ts)document.getElementById("tourSeconds").value=st.ts;if(st.tp!==undefined)document.getElementById("tourStopAtPoints52").checked=!!st.tp;if(st.vu)document.getElementById("videoUrl").value=st.vu;setFlightSpeed(st.fs??1);setFlightCount(st.fc??100);setAuroraColor(st.ac??0);if(st.qm)applyQualityMode(st.qm);syncFlightButton();if(st.b)startPlay();
 }
 function loadURLState(){const t=new URLSearchParams(location.search).get('v');if(!t)return false;const st=decodeState(t);if(st){applyState(st);return true}return false}
-function saveView(){const st=state();savedCameraState=captureCameraState();localStorage.setItem('3XyzMedia_single_view_v3',JSON.stringify(st));localStorage.setItem('3XyzMedia_saved_camera_v1',JSON.stringify(savedCameraState));showShareUrl(currentShareUrl());showToast('\u0412\u0438\u0434 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d \u2713')}
+function saveView(){const st=state();st.logoZOffset=Number(document.getElementById('logoZOffset').value);st.logoXYZ=['X','Y','Z'].map(a=>Number(document.getElementById('logo'+a+'Rotation').value));savedCameraState=captureCameraState();localStorage.setItem('3XyzMedia_single_view_v3',JSON.stringify(st));localStorage.setItem('3XyzMedia_saved_camera_v1',JSON.stringify(savedCameraState));showShareUrl(currentShareUrl());showToast('\u0412\u0438\u0434 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d \u2713')}
 function loadView(){const raw=localStorage.getItem('3XyzMedia_single_view_v3');if(!raw){showToast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043d\u043e\u0433\u043e \u0432\u0438\u0434\u0430 \u043d\u0435\u0442');return}try{const loaded=JSON.parse(raw);applyState(loaded);savedCameraState=captureCameraState();showShareUrl(currentShareUrl());showToast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043d\u044b\u0439 \u0432\u0438\u0434 \u043e\u0442\u043a\u0440\u044b\u0442 \u2713')}catch(e){showToast('\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043d\u044b\u0439 \u0432\u0438\u0434')}}
 function showToast(s){const t=document.getElementById('toast');t.textContent=s;t.classList.add('show');clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('show'),1400)}
 
@@ -1652,7 +1683,7 @@ function xyzFire39StartFx(duration){
 </script>
 
 <div id="logoMorphTest" style="position:fixed;z-index:999999;top:214px;left:12px;width:min(355px,calc(100vw - 28px));padding:10px 12px;box-sizing:border-box;border:1px solid #2596bb;background:rgba(4,12,22,.95);border-radius:12px;color:#e3faff;font:13px Arial,sans-serif">
-<div id="logoMorphHeader"><strong>⚛ LOGO MORPH v6 · вращение XYZ</strong><button id="logoMorphCollapse" type="button" aria-expanded="true" title="Закрыть LOGO MORPH">×</button></div>
+<div id="logoMorphHeader"><strong>⚛ LOGO MORPH v7 · XYZ + высота</strong><button id="logoMorphCollapse" type="button" aria-expanded="true" title="Закрыть LOGO MORPH">×</button></div>
 <div id="logoMorphBody">
 <label style="display:block;margin:3px 0;font-size:12px"><input type="checkbox" id="logoMirrorX" checked> Зеркально исправить текст</label>
 <div style="display:flex;gap:6px;flex-wrap:wrap;margin:5px 0 3px">
@@ -1665,8 +1696,10 @@ function xyzFire39StartFx(duration){
 <input id="logoYRotation" type="range" min="0" max="360" step="1" value="0" style="width:100%;accent-color:#16bfff">
 <label for="logoZRotation" style="display:block;margin-top:5px;font-size:12px">Вращение текста вокруг Z: <strong id="logoZRotationValue">180°</strong></label>
 <input id="logoZRotation" type="range" min="0" max="360" step="1" value="180" style="width:100%;accent-color:#16bfff" aria-label="Вращение LOGO MORPH вокруг оси Z">
+<label for="logoZOffset" style="display:block;margin-top:5px;font-size:12px">Смещение текста по Z: <strong id="logoZOffsetValue">0.0 ед.</strong></label>
+<input id="logoZOffset" type="range" min="-150" max="150" step="0.5" value="0" style="width:100%;accent-color:#16bfff" aria-label="Смещение текста по оси Z">
 <div style="margin:5px 0 2px">Морфинг: <span id="logoV2Num">0%</span></div><input id="logoV2Slider" type="range" min="0" max="100" value="0" style="width:100%">
 <div id="logoV2Status" style="font-size:11px;color:#a5d7e7">Без эффекта — исходная модель</div></div></div>
 <button id="logoMorphShow" type="button" title="Открыть LOGO MORPH">⚛ MORPH</button>
-<script src="logo_morph_v6.js"></script>
+<script src="logo_morph_v7.js?v=7-height-1"></script>
 </body></html>
