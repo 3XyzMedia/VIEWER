@@ -208,7 +208,7 @@ void splatshader(inout vec4 pos, inout mat3 mx, inout vec4 color) {
         t=t*t*(3.0-2.0*t);
         pos.xyz=mix(original,destination,t);
         color.rgb=mix(color.rgb,vec3(0.03,0.71,0.99),t*0.7);
-        mx = mix(mx, mat3(0.22), t);
+        mx *= (1.0 - 0.78 * t); // GLSL ES 1.00: mat3 * float; no matrix mix overload
         return;
       }
       if (fx_mode < 0.5) return;
