@@ -1,0 +1,92 @@
+// Isolated morph test, no change to STUDIO camera handlers.
+(()=>{
+const $=id=>document.getElementById(id), slider=$('logoV2Slider'),num=$('logoV2Num'),status=$('logoV2Status');
+let frame=0;
+// Restore exact XYZ orientation from SHARE. URL params override packed state.
+const params = new URLSearchParams(location.search);
+let packedAngles = null;
+try {
+  const t=params.get('v');
+  if(t && t.startsWith('j')){
+    let s=t.slice(1).replace(/-/g,'+').replace(/_/g,'/');
+    while(s.length%4)s+='=';
+    const parsed=JSON.parse(atob(s));
+    if(Array.isArray(parsed.logoXYZ)&&parsed.logoXYZ.length===3) packedAngles=parsed.logoXYZ;
+  }
+}catch(_){}
+function readAngle(axis,idx,fallback){
+  const raw=params.get('morph'+axis.toLowerCase());
+  const val=raw!==null?Number(raw):(packedAngles?Number(packedAngles[idx]):fallback);
+  return Number.isFinite(val)?Math.max(0,Math.min(360,Math.round(val))):fallback;
+}
+const xSlider=$('logoXRotation'),ySlider=$('logoYRotation'),zSlider=$('logoZRotation'),zValue=$('logoZRotationValue');
+for(const [a,i,slider,defaultAngle] of [['X',0,xSlider,0],['Y',1,ySlider,0],['Z',2,zSlider,180]]){
+  slider.value=String(readAngle(a,i,defaultAngle));
+  $('logo'+a+'RotationValue').textContent=slider.value+'°';
+}
+window.xyzMorphSharedAngles=[Number(xSlider.value),Number(ySlider.value),Number(zSlider.value)];
+function k(){return window.xyzMorphKrpano || window.krpano || window.k || document.getElementById('pano')?.krpano || null;}
+function apply(t){const p=Math.max(0,Math.min(1,t)); slider.value=Math.round(p*100);num.textContent=Math.round(p*100)+'%';
+ const x=k();if(!x||typeof x.set!=='function'){status.textContent='krpano ещё не готов';return;}
+ try{x.set('image.splats.fx_power',$('logoDepthFlip').checked?2:1);x.set('image.splats.fx_radius',($('logoMirrorX').checked?-1:1)*100);
+ x.set('image.splats.fx_rotx',Number(xSlider.value));
+ x.set('image.splats.fx_roty',Number(ySlider.value));
+ x.set('image.splats.fx_rotz',Number(zSlider.value));x.set('image.splats.fx_progress',p);x.set('image.splats.fx_mode',p>0?9:0);status.textContent=p>0?'Пространственный morph · режим 9':'Исходная модель';}
+ catch(e){status.textContent='Ошибка: '+e.message;}}
+// Set uniform rotation independently of morph progress; no animation/audio/video changes.
+function syncAngles(){
+  const viewer=k();
+  if(!viewer||typeof viewer.set!=='function')return false;
+  try{
+    viewer.set('image.splats.fx_rotx',Number(xSlider.value));
+    viewer.set('image.splats.fx_roty',Number(ySlider.value));
+    viewer.set('image.splats.fx_rotz',Number(zSlider.value));
+    return true;
+  }catch(_){return false}
+}
+function reset(){cancelAnimationFrame(frame);apply(0);}
+$('logoV2Go').addEventListener('click',()=>{cancelAnimationFrame(frame);const start=performance.now();function tick(now){let a=Math.min(1,(now-start)/6600);let p;if(a<.46){const q=a/.46;p=q*q*(3-2*q);}else if(a<.56){p=1;}else{const q=(a-.56)/.44;p=1-q*q*(3-2*q);}apply(p);if(a<1)frame=requestAnimationFrame(tick);else reset();}frame=requestAnimationFrame(tick)});
+$('logoV2Reset').addEventListener('click',reset);
+for(const [key,s] of [['X',xSlider],['Y',ySlider]]) s.addEventListener('input',()=>{
+  $('logo'+key+'RotationValue').textContent=s.value+'°';
+  apply(Number(slider.value)/100);
+});
+zSlider.addEventListener('input',()=>{
+  zValue.textContent=zSlider.value+'°';
+  // Update shader orientation immediately; preserve the current morph percentage.
+  apply(Number(slider.value)/100);
+});
+$('logoDepthFlip').addEventListener('change',()=>apply(Number(slider.value)/100));$('logoMirrorX').addEventListener('change',()=>apply(Number(slider.value)/100));
+slider.addEventListener('input',()=>{cancelAnimationFrame(frame);apply(Number(slider.value)/100)});
+window.addEventListener('keydown',e=>{if(e.key==='Escape')reset()});
+let attempts=0;
+const warmup=setInterval(()=>{if(syncAngles()||++attempts>50)clearInterval(warmup);},200);
+})();
+
+(()=>{
+const panel=document.getElementById('logoMorphTest'), opener=document.getElementById('logoMorphShow'), close=document.getElementById('logoMorphCollapse');
+if(!panel||!opener||!close)return;
+close.addEventListener('click',()=>{panel.style.display='none';});
+opener.addEventListener('click',()=>{
+  panel.style.display=(panel.style.display==='none'?'block':'none');
+});
+if(window.innerWidth<650){panel.style.display='none';}
+// In share viewer, do not reveal author's MORPH controls.
+if(new URLSearchParams(location.search).get('ui')==='locked'){
+  panel.style.display='none';
+  opener.style.display='none';
+}
+})();
+
+// v5.3: extra reaction to existing label click; original CSS neon/reveal is unchanged.
+(()=>{
+  const brand=document.getElementById('brand');
+  const go=document.getElementById('logoV2Go');
+  if(!brand||!go)return;
+  brand.addEventListener('click',()=>{
+    const params=new URLSearchParams(location.search);
+    const visitor=params.get('ui')==='locked';
+    const allowed=!visitor || params.get('morph')==='1';
+    if(allowed) go.click();
+  });
+})();
