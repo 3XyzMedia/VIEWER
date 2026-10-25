@@ -1,6 +1,0 @@
-<krpano version="1.24" title="3XyzMedia PLAIN MODEL SAFE">
-  <image><splats url="%$xyz_modelply%" scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180" rotationorder="YXZ" antialias="0.30" /></image>
-  <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200" fovtype="VFOV" fov="70" fovmin="15" fovmax="150" />
-  <control locked="true" />
-  <display><splats rendermode="perspective" sortmode="distance" streaming="true" scale="0.25" /></display>
-</krpano>
