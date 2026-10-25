@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>3XyzMedia — GPU 20K MORPH LAB v47</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,Arial,sans-serif}*{box-sizing:border-box}html,body{margin:0;background:#05080d;color:#e7f3f8;height:100%;overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.panel{position:fixed;top:18px;left:18px;width:min(360px,calc(100vw - 36px));background:rgba(8,16,27,.93);border:1px solid #28637a;border-radius:14px;box-shadow:0 8px 40px #000b;padding:14px;max-height:calc(100dvh - 36px);overflow:auto}
+h1{font-size:17px;margin:0 0 4px}.sub{font-size:11px;color:#7fadc2;line-height:1.5;margin:0 0 12px}.head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.pill{color:#5ee1f0;font-size:11px;border:1px solid #305b74;border-radius:999px;padding:4px 7px;white-space:nowrap}
+input[type=range]{width:100%;accent-color:#4ad8ec;margin:5px 0 12px}input[type=file]{width:100%;font-size:12px;margin:5px 0 8px}button{background:#172a3b;border:1px solid #36748a;color:#f3fcff;border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer}button:hover{background:#245575}.go{background:#087b91}.buttons{display:flex;gap:8px;margin:8px 0 11px}.buttons button{flex:1}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin-top:5px}label b{color:#80edff;font-variant-numeric:tabular-nums}
+select{border:1px solid #3c6b7b;background:#112738;color:#d5f9ff;border-radius:7px;padding:6px}
+.hint{font-size:11px;line-height:1.5;color:#9bafbf;margin:8px 0 0}.notice{margin-top:11px;border-top:1px solid #315063;padding-top:8px;font-size:11px;color:#bfd8e4;line-height:1.45;white-space:pre-wrap}#diag{font-size:11px;color:#65d9c3;min-height:1.5em}
+@media(max-width:600px){.panel{top:auto;bottom:6px;left:6px;width:calc(100vw - 12px);max-height:54dvh;padding:10px}.sub{display:none}h1{font-size:14px}}
+</style></head><body><canvas id="gl"></canvas>
+<div class="panel"><div class="head"><div><h1>3XyzMedia · GPU MORPH 20K</h1><p class="sub">v47 · отдельный тест новой архитектуры без тяжёлого шейдера krpano</p></div><span class="pill">20 000</span></div>
+<div id="diag">Инициализация…</div>
+<label>Модель (локальный файл)</label><input id="file" type="file" accept=".ply,.obj,.stl,.glb,.fbx" aria-label="Загрузить модель">
+<div class="buttons"><button id="demo">Демо-модель</button><button class="go" id="play">▶ MORPH</button><button id="reset">↺</button></div>
+<label>Перевоплощение <b id="progressV">0%</b></label><input type="range" min="0" max="100" step="1" value="0" id="progress">
+<label>Взрыв / диаметр <b id="spreadV">1.5×</b></label><input type="range" min="0.25" max="3" step="0.05" value="1.5" id="spread">
+<label>Размер отдельных точек <b id="sizeV">2.0 px</b></label><input type="range" min="0.7" max="4.5" step="0.1" value="2.0" id="size">
+<label>Полный цикл <b id="durationV">5.0 c</b></label><input type="range" min="2.5" max="12" step="0.5" value="5" id="duration">
+<label>Цвет текста <select id="color"><option value="red">Тёплый красный</option><option value="cyan">Голубой</option></select></label>
+<p class="hint">Мышь: вращение · колесо: масштаб. Телефон: 1 палец — вращение, 2 пальца — масштаб. Можно перетянуть файл модели прямо на окно.</p>
+<div class="notice">Работает с обычными OBJ, STL, стандартными PLY и базовыми GLB. Для FBX — экспорт в GLB из Blender. Сжатые PLY PlayCanvas поддерживаются при наличии chunk + packed_position. Это отдельный тест GPU MORPH, пока не встроенный в STUDIO.</div></div>
+<script>
+'use strict';
+(()=>{
+ const $=id=>document.getElementById(id), status=$('diag');
+ const N=20000, canvas=$('gl');
+ function tell(s,bad=false){status.textContent=s;status.style.color=bad?'#ff817e':'#65d9c3';}
+ const gl=canvas.getContext('webgl2',{alpha:false,antialias:false,powerPreference:'high-performance',preserveDrawingBuffer:false});
+ if(!gl){tell('Нужен WebGL2: GPU/браузер не поддерживает',true);return;}
+ canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();stop();tell('WebGL context lost — обнови страницу',true);});
+ const vert=`#version 300 es
+ precision highp float;
+ layout(location=0) in vec3 aSource;
+ layout(location=1) in vec3 aTarget;
+ layout(location=2) in vec3 aSeed;
+ layout(location=3) in vec3 aColor;
+ uniform float uProgress,uSpread,uSize,uYaw,uPitch,uDistance,uAspect,uColorStyle;
+ out vec3 vColor;
+ float ease(float x){x=clamp(x,0.,1.);return x*x*(3.-2.*x);}
+ mat3 rotation(float a,float b){float ca=cos(a),sa=sin(a),cb=cos(b),sb=sin(b);
+ return mat3(ca,0.,-sa, 0.,1.,0., sa,0.,ca)*mat3(1.,0.,0.,0.,cb,sb,0.,-sb,cb);}
+ void main(){
+ float p=clamp(uProgress,0.,1.);
+ float mixT=ease((p-.18)/.74);
+ float burst=ease(p/.32)*(1.-ease((p-.46)/.48));
+ vec3 dir=normalize(aSeed*2.-1.+vec3(.0001));
+ vec3 move=normalize(aTarget-aSource+vec3(.0001));
+ vec3 swirl=normalize(cross(move,dir)+vec3(.001));
+ vec3 brown=dir*(1.05+.85*aSeed.x)+swirl*(.24+.38*aSeed.y)*sin(17.*p+11.*aSeed.z);
+ vec3 pos=mix(aSource,aTarget,mixT)+uSpread*burst*brown;
+ vec3 view=rotation(uYaw,uPitch)*pos-vec3(0.,0.,uDistance);
+ float f=2.1445069; // 2 / tan(50deg / 2)
+ gl_Position=vec4(view.x*f/uAspect,view.y*f, -view.z*1.0002-0.20002,-view.z);
+ float colorT=ease((p-.25)/.67);
+ vec3 red=mix(vec3(.96,.12,.19),vec3(1.,.62,.48),.43*aSeed.y);
+ vec3 cyan=mix(vec3(.12,.76,.97),vec3(.74,.98,1.),.42*aSeed.y);
+ vec3 targetCol=mix(red,cyan,uColorStyle);
+ vColor=mix(aColor,targetCol,colorT);
+ float perspective=9./max(1.,-view.z);
+ gl_PointSize=clamp(uSize*perspective,1.0,10.0);
+ }`;
+ const frag=`#version 300 es
+ precision mediump float;
+ in vec3 vColor;
+ out vec4 outColor;
+ void main(){vec2 q=gl_PointCoord*2.-1.;float r=dot(q,q);float alpha=(1.-smoothstep(.28,1.,r))*.96;if(alpha<.02)discard;outColor=vec4(vColor,alpha);}`;
+ function shader(type,src){const sh=gl.createShader(type);gl.shaderSource(sh,src);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));return sh;}
+ let prog;
+ try{prog=gl.createProgram();gl.attachShader(prog,shader(gl.VERTEX_SHADER,vert));gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,frag));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(prog));}catch(err){tell('Shader: '+err.message,true);return;}
+ const u={};for(const name of ['uProgress','uSpread','uSize','uYaw','uPitch','uDistance','uAspect','uColorStyle'])u[name]=gl.getUniformLocation(prog,name);
+ const vao=gl.createVertexArray();gl.bindVertexArray(vao);
+ const buffers=[];for(let i=0;i<4;i++){const b=gl.createBuffer();buffers.push(b);gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,N*3*4,gl.DYNAMIC_DRAW);gl.vertexAttribPointer(i,3,gl.FLOAT,false,0,0);gl.enableVertexAttribArray(i);}
+ gl.bindVertexArray(null);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);
+ let source=new Float32Array(N*3),target=new Float32Array(N*3),seed=new Float32Array(N*3),cols=new Float32Array(N*3);
+ let yaw=.16,pitch=.10,distance=11.2,playing=false,start=0,animation=0,loadedTarget=false;
+ for(let i=0;i<N*3;i+=3){let r=i/3;seed[i]=fract(Math.sin(r*12.9898+2.3)*43758.5453);seed[i+1]=fract(Math.sin(r*78.233+7.4)*23654.311);seed[i+2]=fract(Math.sin(r*42.772+13.9)*67327.395);}
+ function fract(v){return v-Math.floor(v)}
+ function bindData(){for(let i=0;i<4;i++){gl.bindBuffer(gl.ARRAY_BUFFER,buffers[i]);gl.bufferSubData(gl.ARRAY_BUFFER,0,[source,target,seed,cols][i]);}}
+ function demo(){for(let i=0;i<N;i++){const j=3*i,t=i*0.61803398875*Math.PI*2,phi=(i+.5)*2.399963229728653;const r=2.25+.25*Math.sin(5*phi);source[j]=r*Math.cos(phi)*Math.cos(phi*.37);source[j+1]=r*Math.sin(phi)*Math.cos(phi*.37);source[j+2]=r*Math.sin(phi*.37);
+ const f=.6+.4*Math.sin(phi*3);cols[j]=Math.min(1,.75*f+.2);cols[j+1]=Math.min(1,.80*f+.15);cols[j+2]=Math.min(1,.96*f+.04);}
+ bindData();tell(loadedTarget?'Демо-модель готова · 20 000 частиц':'Модель готова · загрузка текста…');}
+ async function fetchTarget(){try{const res=await fetch('./LABEL_REAL_20000.xyz.bin');if(!res.ok)throw Error('HTTP '+res.status);const raw=await res.arrayBuffer();if(raw.byteLength!==N*3*4)throw Error('размер файла '+raw.byteLength);target.set(new Float32Array(raw));loadedTarget=true;bindData();tell('Готово: настоящий LABEL 20K, шейдер компактный');}catch(e){tell('Не удалось загрузить LABEL 20K: '+e.message,true);}}
+ function update(){let dpr=Math.min(devicePixelRatio||1,1.5),w=Math.max(1,Math.floor(innerWidth*dpr)),h=Math.max(1,Math.floor(innerHeight*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h)}
+ if(playing){const elapsed=performance.now()-start,period=Number($('duration').value)*1000,t=Math.min(1,elapsed/period),hold=.038,up=.481;let p;
+ if(t<up)p=t/up;else if(t<up+hold)p=1;else p=Math.max(0,1-(t-up-hold)/(1-up-hold));$('progress').value=String(Math.round(p*100));$('progressV').textContent=Math.round(p*100)+'%';if(t>=1){playing=false;$('play').textContent='▶ MORPH';}}
+ gl.clearColor(.02,.032,.052,1);gl.clear(gl.COLOR_BUFFER_BIT);
+ gl.useProgram(prog);gl.bindVertexArray(vao);
+ gl.uniform1f(u.uProgress,Number($('progress').value)/100);gl.uniform1f(u.uSpread,Number($('spread').value));gl.uniform1f(u.uSize,Number($('size').value));gl.uniform1f(u.uYaw,yaw);gl.uniform1f(u.uPitch,pitch);gl.uniform1f(u.uDistance,distance);gl.uniform1f(u.uAspect,canvas.width/canvas.height);gl.uniform1f(u.uColorStyle,$('color').value==='cyan'?1:0);
+ gl.drawArrays(gl.POINTS,0,N);animation=requestAnimationFrame(update);}
+ function stop(){playing=false;cancelAnimationFrame(animation);$('play').textContent='▶ MORPH';}
+ $('play').addEventListener('click',()=>{if(!loadedTarget){tell('Сначала загрузится LABEL 20K');return}if(playing){stop();update();return}playing=true;start=performance.now();$('play').textContent='■ STOP';});
+ $('reset').addEventListener('click',()=>{stop();$('progress').value='0';$('progressV').textContent='0%';});
+ $('demo').addEventListener('click',()=>{stop();demo();});
+ for(const [id,label,fmt] of [['progress','progressV',v=>v+'%'],['spread','spreadV',v=>Number(v).toFixed(2)+'×'],['size','sizeV',v=>Number(v).toFixed(1)+' px'],['duration','durationV',v=>Number(v).toFixed(1)+' c']])$(''+id).addEventListener('input',e=>{if(id==='progress')stop();$(label).textContent=fmt(e.target.value);});
+ let pointer=null,touchDist=null;
+ canvas.addEventListener('pointerdown',e=>{pointer=[e.pointerId,e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);});
+ canvas.addEventListener('pointermove',e=>{if(!pointer||pointer[0]!==e.pointerId)return;yaw+=(e.clientX-pointer[1])*.007;pitch=Math.max(-1.4,Math.min(1.4,pitch+(e.clientY-pointer[2])*.007));pointer=[e.pointerId,e.clientX,e.clientY];});
+ canvas.addEventListener('pointerup',()=>{pointer=null;});
+ canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.min(40,Math.max(3,distance*Math.exp(e.deltaY*.001)));},{passive:false});
+ canvas.addEventListener('touchmove',e=>{if(e.touches.length===2){e.preventDefault();let [a,b]=e.touches,dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);if(touchDist)distance=Math.min(40,Math.max(3,distance*touchDist/dist));touchDist=dist;}},{passive:false});canvas.addEventListener('touchend',()=>{touchDist=null;});
+ async function parsePLY(buf){const bytes=new Uint8Array(buf),prefix=new TextDecoder('ascii').decode(bytes.slice(0,Math.min(bytes.length,100000)));const m=prefix.match(/end_header\r?\n/);if(!m)throw Error('PLY: нет end_header');const header=prefix.slice(0,m.index),off=m.index+m[0].length;const binary=/format binary_little_endian/.test(header),ascii=/format ascii/.test(header);if(!binary&&!ascii)throw Error('PLY: поддерживается little-endian или ASCII');const elements=[];let el=null;for(const line of header.split(/\r?\n/)){let p=line.trim().split(/\s+/);if(p[0]==='element'){el={name:p[1],count:Number(p[2]),props:[]};elements.push(el)}else if(p[0]==='property'&&el){if(p[1]==='list')throw Error('PLY с face list: экспортируй mesh как OBJ');el.props.push({type:p[1],name:p[2]})}}
+ const size={char:1,uchar:1,int8:1,uint8:1,short:2,ushort:2,int16:2,uint16:2,int:4,uint:4,int32:4,uint32:4,float:4,float32:4,double:8,float64:8};const read=(v,pos,type)=>({char:()=>v.getInt8(pos),uchar:()=>v.getUint8(pos),int8:()=>v.getInt8(pos),uint8:()=>v.getUint8(pos),short:()=>v.getInt16(pos,true),ushort:()=>v.getUint16(pos,true),int16:()=>v.getInt16(pos,true),uint16:()=>v.getUint16(pos,true),int:()=>v.getInt32(pos,true),uint:()=>v.getUint32(pos,true),int32:()=>v.getInt32(pos,true),uint32:()=>v.getUint32(pos,true),float:()=>v.getFloat32(pos,true),float32:()=>v.getFloat32(pos,true),double:()=>v.getFloat64(pos,true),float64:()=>v.getFloat64(pos,true)})[type]?.();
+ for(let el of elements){let ofs=0;for(let p of el.props){p.off=ofs;ofs+=size[p.type]||0;}el.stride=ofs;if(!ofs)throw Error('PLY: неизвестный тип');}
+ let all=[],rgb=[],chunks=[];
+ if(binary){const dv=new DataView(buf);let cursor=off;for(let el of elements){let names=Object.fromEntries(el.props.map(p=>[p.name,p]));const get=(row,n)=>names[n]?read(dv,cursor+row*el.stride+names[n].off,names[n].type):0;
+ if(el.name==='chunk'){for(let i=0;i<el.count;i++){chunks.push({min:[get(i,'min_x'),get(i,'min_y'),get(i,'min_z')],max:[get(i,'max_x'),get(i,'max_y'),get(i,'max_z')]});}}
+ if(el.name==='vertex') {if(names.x&&names.y&&names.z){for(let i=0;i<el.count;i++){all.push(get(i,'x'),get(i,'y'),get(i,'z'));let c=names.red?[get(i,'red')/255,get(i,'green')/255,get(i,'blue')/255]:names.f_dc_0?[.5+.28209479*get(i,'f_dc_0'),.5+.28209479*get(i,'f_dc_1'),.5+.28209479*get(i,'f_dc_2')]:[.9,.94,1];rgb.push(...c);}}
+ else if(names.packed_position){for(let i=0;i<el.count;i++){let c=chunks[Math.floor(i/256)];if(!c)throw Error('PLY compressed: chunk должен быть перед vertex');let v=get(i,'packed_position')>>>0;let q=[(v>>>21)/2047,((v>>>11)&1023)/1023,(v&2047)/2047];all.push(...q.map((f,j)=>c.min[j]+f*(c.max[j]-c.min[j])));let col=get(i,'packed_color')>>>0;rgb.push(((col>>>24)&255)/255,((col>>>16)&255)/255,((col>>>8)&255)/255);}}
+ }cursor+=el.count*el.stride;}}
+ else{const lines=new TextDecoder('utf8').decode(bytes.slice(off)).trim().split(/\r?\n/);let el=elements.find(e=>e.name==='vertex');if(!el)throw Error('PLY: vertex отсутствует');let nx=el.props.findIndex(p=>p.name==='x'),ny=el.props.findIndex(p=>p.name==='y'),nz=el.props.findIndex(p=>p.name==='z');if(Math.min(nx,ny,nz)<0)throw Error('PLY XYZ отсутствуют');for(let i=0;i<Math.min(el.count,lines.length);i++){let v=lines[i].trim().split(/\s+/).map(Number);all.push(v[nx],v[ny],v[nz]);rgb.push(.85,.9,1);}}
+ if(all.length===0)throw Error('PLY не содержит XYZ');return{p:new Float32Array(all),c:new Float32Array(rgb),mesh:false};}
+ function parseOBJ(text){const verts=[],points=[],colors=[];for(const line of text.split(/\r?\n/)){let a=line.trim().split(/\s+/);if(a[0]==='v'&&a.length>=4)verts.push([+a[1],+a[2],+a[3]]);if(a[0]==='f'&&a.length>=4){const ids=a.slice(1).map(s=>{let n=+s.split('/')[0];return n<0?verts.length+n:n-1});for(let i=1;i+1<ids.length;i++)for(let ind of [ids[0],ids[i],ids[i+1]]){let p=verts[ind];if(p)points.push(...p)}}}let p=points.length?points:verts.flat();return{p:new Float32Array(p),c:null,mesh:points.length>0};}
+ function parseSTL(buf){const dv=new DataView(buf),n=dv.byteLength>84?dv.getUint32(80,true):0;let points=[];if(n>0&&84+n*50===buf.byteLength){for(let i=0;i<n;i++){let base=84+i*50+12;for(let j=0;j<9;j++)points.push(dv.getFloat32(base+j*4,true));}}else{let s=new TextDecoder().decode(buf);for(let m of s.matchAll(/vertex\s+([-+\deE.]+)\s+([-+\deE.]+)\s+([-+\deE.]+)/g))points.push(+m[1],+m[2],+m[3]);}if(!points.length)throw Error('STL пустой');return{p:new Float32Array(points),c:null,mesh:true};}
+ function parseGLB(buf){const dv=new DataView(buf);if(dv.getUint32(0,true)!==0x46546c67)throw Error('Не GLB');let ptr=12,json=null,binary=null;while(ptr+8<=buf.byteLength){let len=dv.getUint32(ptr,true),type=dv.getUint32(ptr+4,true);ptr+=8;if(type===0x4e4f534a)json=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,ptr,len)));if(type===0x004e4942)binary=ptr;ptr+=len;}if(!json||binary===null)throw Error('GLB: нужен JSON + BIN');let all=[];function accessor(idx){const ac=json.accessors[idx],view=json.bufferViews[ac.bufferView],component=ac.componentType,n=ac.count,dim={SCALAR:1,VEC2:2,VEC3:3,VEC4:4}[ac.type],size={5126:4,5125:4,5123:2,5121:1}[component];if(!size)throw Error('GLB: атрибут не поддерживается');let stride=view.byteStride||dim*size,off=binary+(view.byteOffset||0)+(ac.byteOffset||0),arr=[];for(let i=0;i<n;i++)for(let j=0;j<dim;j++){let addr=off+i*stride+j*size;arr.push(component===5126?dv.getFloat32(addr,true):component===5125?dv.getUint32(addr,true):component===5123?dv.getUint16(addr,true):dv.getUint8(addr));}return{arr,dim};}
+ for(const mesh of json.meshes||[])for(const prim of mesh.primitives||[]){if(prim.mode!==undefined&&prim.mode!==4)continue;let pos=accessor(prim.attributes.POSITION).arr,indices=prim.indices!==undefined?accessor(prim.indices).arr:null;if(indices){for(let i=0;i+2<indices.length;i+=3)for(let j of [indices[i],indices[i+1],indices[i+2]])all.push(pos[j*3],pos[j*3+1],pos[j*3+2]);}else all.push(...pos);}
+ if(!all.length)throw Error('GLB: нет mesh positions');return{p:new Float32Array(all),c:null,mesh:true};}
+ function setSource(data,name){const p=data.p,c=data.c;const count=p.length/3;if(count<1)throw Error('Нет точек');let lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];for(let i=0;i<p.length;i+=3)for(let j=0;j<3;j++){lo[j]=Math.min(lo[j],p[i+j]);hi[j]=Math.max(hi[j],p[i+j]);}
+ let mid=lo.map((v,j)=>(v+hi[j])*0.5),span=Math.max(...hi.map((v,j)=>v-lo[j]),1e-6),sc=5.1/span;
+ const triangleMesh=Boolean(data.mesh)&&count>=3;
+ let cdf=null,totalArea=0;
+ if(triangleMesh){cdf=new Float64Array(Math.floor(count/3));for(let t=0;t<cdf.length;t++){
+ const o=t*9,ax=p[o+3]-p[o],ay=p[o+4]-p[o+1],az=p[o+5]-p[o+2],bx=p[o+6]-p[o],by=p[o+7]-p[o+1],bz=p[o+8]-p[o+2];
+ const cx=ay*bz-az*by,cy=az*bx-ax*bz,cz=ax*by-ay*bx;
+ totalArea+=Math.hypot(cx,cy,cz)*.5;cdf[t]=totalArea;
+ }}
+ function idxFromArea(r){let low=0,high=cdf.length-1;while(low<high){const m=(low+high)>>1;if(cdf[m]<r)low=m+1;else high=m}return low;}
+ for(let i=0;i<N;i++){
+ let idx=0,baryA=1,baryB=0,baryC=0;
+ if(triangleMesh&&totalArea>1e-12){idx=idxFromArea(seed[i*3]*totalArea)*3;
+ const r1=Math.sqrt(seed[i*3+1]),r2=seed[i*3+2];baryA=1-r1;baryB=r1*(1-r2);baryC=r1*r2;
+ }else idx=Math.min(count-1,Math.floor(((i+.5)*count/N)));
+ for(let j=0;j<3;j++){
+ let value=triangleMesh&&totalArea>1e-12?p[idx*3+j]*baryA+p[(idx+1)*3+j]*baryB+p[(idx+2)*3+j]*baryC:p[idx*3+j];
+ source[i*3+j]=(value-mid[j])*sc;
+ cols[i*3+j]=c?Math.min(1,Math.max(.16,c[idx*3+j])):(j===0?.85:j===1?.89:.99);
+ }}
+ bindData();$('progress').value='0';$('progressV').textContent='0%';tell(name+' · '+count.toLocaleString('ru-RU')+' вершин → 20 000 GPU-частиц');}
+ async function openFile(file){if(!file)return;stop();tell('Чтение '+file.name+'…');try{const buf=await file.arrayBuffer(),ext=file.name.split('.').pop().toLowerCase();let data;if(ext==='ply')data=await parsePLY(buf);else if(ext==='obj')data=parseOBJ(new TextDecoder().decode(buf));else if(ext==='stl')data=parseSTL(buf);else if(ext==='glb')data=parseGLB(buf);else if(ext==='fbx')throw Error('FBX: экспортируй в Blender как .GLB (glTF Binary)');else throw Error('Формат не поддерживается');setSource(data,file.name);}catch(err){tell('Ошибка модели: '+err.message,true);}}
+ $('file').addEventListener('change',e=>openFile(e.target.files[0]));window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>{e.preventDefault();openFile(e.dataTransfer.files[0])});
+ demo();fetchTarget();update();
+})();
+</script></body></html>
