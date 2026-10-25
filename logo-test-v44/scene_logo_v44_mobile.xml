@@ -1,0 +1,308 @@
+<krpano version="1.24" title="3XyzMedia LOGO MORPH v44">
+  <!-- Experimental scene only. Original scene.xml and PLY remain unchanged. -->
+  <image>
+    <splats url="https://raw.githubusercontent.com/3XyzMedia/3d-models/main/model/SOY2.ply"
+      scale="1.0" tx="0" ty="0" tz="0" rx="0" ry="0" rz="180"
+      rotationorder="YXZ" antialias="0.30"
+      shader="get:action[xyz_fx44_safe_shader].content"
+      fx_mode="0" fx_progress="0" fx_power="1.0" fx_radius="100.0" fx_rotx="0.0" fx_roty="0.0" fx_rotz="180.0" fx_logox="0.0" fx_logoy="0.0" fx_logoz="0.0" />
+  </image>
+  <view hlookat="0" vlookat="0" roll="0" tx="0" ty="0" tz="200"
+    fovtype="VFOV" fov="70" fovmin="15" fovmax="150"
+    maxtilt="179" mintilt="-179"/>
+  <control locked="true"/>
+  <!-- v52: live flame drawn by a transparent local HTML iframe inside a true 3D hotspot. -->
+  <hotspot name="xyz_fire44_host" type="iframe" iframeurl="fire_canvas_v56.html"
+    renderer="css3d" visible="false" enabled="false" capture="false" handcursor="false"
+    ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" torigin="world"
+    width="700" height="900" scale="0.22" zoom="true" distorted="false" alpha="1" />
+  <hotspot name="xyz_fire_anchor" type="image" url="fire_3d_v40.png" visible="true" enabled="false" handcursor="false" capture="false" alpha="0.001" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" torigin="image" width="20" height="20" zoom="true" scale="0.05" />
+  <!-- 3D FIRE v43: particle hotspots anchored to the local splat origin (0,0,0). -->
+  <hotspot name="xyz_fire40_f_0" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_1" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_2" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_3" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_4" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_5" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_6" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_7" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_8" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_9" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_10" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_11" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_12" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_13" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_14" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_15" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_16" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_f_17" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.05" alpha="0" />
+  <hotspot name="xyz_fire40_k_0" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_1" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_2" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_3" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_4" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_5" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_6" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_7" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_8" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_9" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_10" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_11" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_12" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_k_13" url="fire_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.02" alpha="0" />
+  <hotspot name="xyz_fire40_s_0" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+  <hotspot name="xyz_fire40_s_1" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+  <hotspot name="xyz_fire40_s_2" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+  <hotspot name="xyz_fire40_s_3" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+  <hotspot name="xyz_fire40_s_4" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+  <hotspot name="xyz_fire40_s_5" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+  <hotspot name="xyz_fire40_s_6" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+  <hotspot name="xyz_fire40_s_7" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+  <hotspot name="xyz_fire40_s_8" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+  <hotspot name="xyz_fire40_s_9" url="smoke_3d_v40.png" visible="false" enabled="false" handcursor="false" capture="false" ath="0" atv="0" depth="0" tx="0" ty="0" tz="0" prealign="false" renderer="webgl" distorted="false" zoom="true" scale="0.08" alpha="0" />
+
+  <!-- Mode 0: untouched; 1: burst; 2: vortex; 3: reveal; 4: rainbow reveal; 5: spiral tornado burst; 6: fire / embers / heat distortion.
+       GLSL signature is taken from official krpano 1.24 splatshader example.
+       Animation runs via JavaScript changing custom uniform values. -->
+  <action name="xyz_fx44_safe_shader" type="glsl"><![CDATA[
+    uniform float fx_mode;
+    uniform float fx_progress;
+    uniform float fx_power;
+    uniform float fx_radius;
+    uniform float fx_rotx;
+    uniform float fx_roty;
+    uniform float fx_rotz;
+    uniform float fx_logox;
+    uniform float fx_logoy;
+    uniform float fx_logoz;
+
+    float xyz_hash(vec3 p) {
+      return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+    }
+    vec3 xyz_palette(float t) {
+      return 0.5 + 0.5 * cos(6.2831853 * (vec3(0.06,0.39,0.72) + t));
+    }
+
+    float xyz_fontrow(float glyph, float row) {
+      float mask = 0.0;
+      if (glyph < 0.5) {
+        if (row < 0.5) mask = 31.0;
+        else if (row < 1.5) mask = 1.0;
+        else if (row < 2.5) mask = 1.0;
+        else if (row < 3.5) mask = 15.0;
+        else if (row < 4.5) mask = 1.0;
+        else if (row < 5.5) mask = 1.0;
+        else if (row < 6.5) mask = 31.0;
+      }
+      else if (glyph < 1.5) {
+        if (row < 0.5) mask = 17.0;
+        else if (row < 1.5) mask = 17.0;
+        else if (row < 2.5) mask = 10.0;
+        else if (row < 3.5) mask = 4.0;
+        else if (row < 4.5) mask = 10.0;
+        else if (row < 5.5) mask = 17.0;
+        else if (row < 6.5) mask = 17.0;
+      }
+      else if (glyph < 2.5) {
+        if (row < 0.5) mask = 0.0;
+        else if (row < 1.5) mask = 0.0;
+        else if (row < 2.5) mask = 17.0;
+        else if (row < 3.5) mask = 17.0;
+        else if (row < 4.5) mask = 15.0;
+        else if (row < 5.5) mask = 1.0;
+        else if (row < 6.5) mask = 14.0;
+      }
+      else if (glyph < 3.5) {
+        if (row < 0.5) mask = 0.0;
+        else if (row < 1.5) mask = 0.0;
+        else if (row < 2.5) mask = 31.0;
+        else if (row < 3.5) mask = 2.0;
+        else if (row < 4.5) mask = 4.0;
+        else if (row < 5.5) mask = 8.0;
+        else if (row < 6.5) mask = 31.0;
+      }
+      else if (glyph < 4.5) {
+        if (row < 0.5) mask = 17.0;
+        else if (row < 1.5) mask = 27.0;
+        else if (row < 2.5) mask = 21.0;
+        else if (row < 3.5) mask = 21.0;
+        else if (row < 4.5) mask = 17.0;
+        else if (row < 5.5) mask = 17.0;
+        else if (row < 6.5) mask = 17.0;
+      }
+      else if (glyph < 5.5) {
+        if (row < 0.5) mask = 0.0;
+        else if (row < 1.5) mask = 0.0;
+        else if (row < 2.5) mask = 14.0;
+        else if (row < 3.5) mask = 17.0;
+        else if (row < 4.5) mask = 31.0;
+        else if (row < 5.5) mask = 16.0;
+        else if (row < 6.5) mask = 15.0;
+      }
+      else if (glyph < 6.5) {
+        if (row < 0.5) mask = 1.0;
+        else if (row < 1.5) mask = 1.0;
+        else if (row < 2.5) mask = 15.0;
+        else if (row < 3.5) mask = 17.0;
+        else if (row < 4.5) mask = 17.0;
+        else if (row < 5.5) mask = 17.0;
+        else if (row < 6.5) mask = 15.0;
+      }
+      else if (glyph < 7.5) {
+        if (row < 0.5) mask = 4.0;
+        else if (row < 1.5) mask = 0.0;
+        else if (row < 2.5) mask = 12.0;
+        else if (row < 3.5) mask = 4.0;
+        else if (row < 4.5) mask = 4.0;
+        else if (row < 5.5) mask = 4.0;
+        else if (row < 6.5) mask = 14.0;
+      }
+      else if (glyph < 8.5) {
+        if (row < 0.5) mask = 0.0;
+        else if (row < 1.5) mask = 0.0;
+        else if (row < 2.5) mask = 14.0;
+        else if (row < 3.5) mask = 1.0;
+        else if (row < 4.5) mask = 15.0;
+        else if (row < 5.5) mask = 17.0;
+        else if (row < 6.5) mask = 15.0;
+      }
+      return mask;
+    }
+    bool xyz_fontpixel(float glyph, float col, float row) {
+      float mask=xyz_fontrow(glyph,row);
+      return mod(floor(mask/exp2(4.0-col)),2.0)>0.5;
+    }
+
+void splatshader(inout vec4 pos, inout mat3 mx, inout vec4 color) {
+      if (fx_mode > 8.5 && fx_mode < 9.5) {
+        vec3 original=pos.xyz;
+        float r=xyz_hash(original);
+        float r2=xyz_hash(original.yzx+vec3(29.8));
+        float r3=xyz_hash(original.zxy+vec3(17.1));
+        float glyph=floor(r*9.0);
+        float col=floor(r2*5.0);
+        float row=floor(r3*7.0);
+        for(int n=0;n<5;n++){
+          if(xyz_fontpixel(glyph,col,row)) break;
+          col=mod(col+1.0,5.0);
+          if(n==2) row=mod(row+1.0,7.0);
+        }
+        vec3 destination=vec3((glyph-4.0)*13.5+(col-2.0)*2.05,
+                              (row-3.0)*6.0,
+                              (xyz_hash(original+vec3(9.4))-0.5)*12.0);
+        if(fx_radius < 0.0) destination.x=-destination.x;
+        if(fx_power>1.5) destination.z=-destination.z;
+        // Three independent MODEL-LOCAL axes; do not re-map to camera up-axis.
+        // Euler order: X, then Y, then Z. 180° Z reproduces the previous v5.4 pose.
+        float ax=radians(fx_rotx),ay=radians(fx_roty),az=radians(fx_rotz);
+        float cx=cos(ax),sx=sin(ax),cy=cos(ay),sy=sin(ay),cz=cos(az),sz=sin(az);
+        destination.yz=vec2(destination.y*cx-destination.z*sx,
+                            destination.y*sx+destination.z*cx);
+        destination.xz=vec2(destination.x*cy+destination.z*sy,
+                           -destination.x*sy+destination.z*cy);
+        destination.xy=vec2(destination.x*cz-destination.y*sz,
+                            destination.x*sz+destination.y*cz);
+        destination += vec3(fx_logox, fx_logoy, fx_logoz); // LOGO ONLY: scene axes AFTER rotations
+        destination+=vec3((r2-.5)*1.0,(r3-.5)*0.6,(r-.5)*0.75);
+        float t=clamp(fx_progress,0.0,1.0);
+        t=t*t*(3.0-2.0*t);
+        pos.xyz=mix(original,destination,t);
+        color.rgb=mix(color.rgb,vec3(0.03,0.71,0.99),t*0.7);
+        mx *= (1.0 - 0.78 * t); // GLSL ES 1.00: mat3 * float; no matrix mix overload
+        return;
+      }
+      if (fx_mode < 0.5) return;
+      vec3 origin = pos.xyz;
+      float radius = max(fx_radius, 0.001);
+      float phase = clamp(fx_progress, 0.0, 1.0);
+      float amount = max(fx_power, 0.0);
+      float rnd = xyz_hash(origin);
+      float rnd2 = xyz_hash(origin.zxy + vec3(17.1));
+      float rnd3 = xyz_hash(origin.yzx + vec3(29.8));
+
+      if (fx_mode > 6.5 && fx_mode < 7.5) {
+        // Disperse REAL Gaussian splats into a point-cloud wordmark, then reconstruct the model.
+        // XZ: horizontal text and upright Z, Y: limited depth.
+        float envelope=pow(max(sin(3.14159265*phase),0.0),0.9);
+        float gi=floor(rnd*9.0);
+        float col=floor(rnd2*5.0);
+        float row=floor(rnd3*7.0);
+        // Search nearby pixels so strokes are dense and gaps stay mostly transparent.
+        for(int n=0;n<5;n++) {
+          if (xyz_fontpixel(gi,col,row)) break;
+          col=mod(col+1.0,5.0);
+          if(n==2) row=mod(row+1.0,7.0);
+        }
+        float charsize=max(0.05,radius*0.17);
+        float width=charsize*9.0*0.80;
+        float px=(gi*0.80+col/5.0*0.68)*charsize-width*0.5;
+        float pz=(3.5-row)*charsize/7.0;
+        vec3 target=vec3(px+(rnd2-.5)*charsize*0.09,(rnd3-.5)*charsize*0.10,pz+(rnd-.5)*charsize*0.05);
+        pos.xyz=mix(origin,target,envelope);
+        color.rgb=mix(color.rgb,vec3(0.10+0.20*rnd,0.72+0.25*rnd2,1.0),envelope*0.87);
+        mx*=1.0-0.25*envelope;
+      } else if (fx_mode < 1.5) {
+        // Elastic dispersion and gravity-like return with a continuous velocity profile.
+        // Zero added dwell; natural deceleration at the farthest point.
+        float expansion = pow(max(sin(3.14159265 * phase), 0.0), 1.12);
+        vec3 n = normalize(origin + vec3(0.0002, 0.0003, 0.0001));
+        vec3 jitter = normalize(vec3(rnd - 0.5, rnd2 - 0.5, rnd3 - 0.5) + vec3(0.0001));
+        vec3 dir = normalize(n * 0.62 + jitter * 0.75);
+        pos.xyz += dir * (radius * 0.5 * amount) * expansion * (0.25 + rnd * 0.9);
+        mx *= 1.0 - 0.30 * expansion;
+        color.rgb += expansion * 0.20 * xyz_palette(rnd);
+      } else if (fx_mode < 2.5) {
+        // VORTEX and reverse REBUILD around model local Z axis.
+        float expansion = sin(3.14159265 * phase);
+        float angle = expansion * amount * (2.0 + 5.0 * rnd);
+        float c = cos(angle), s = sin(angle);
+        vec2 xy = origin.xy;
+        vec2 rotated = vec2(c * xy.x - s * xy.y, s * xy.x + c * xy.y);
+        pos.xy = rotated * (1.0 + expansion * amount * 0.25);
+        pos.z = origin.z + expansion * radius * 0.24 * amount * (rnd2 - 0.5);
+        color.rgb += expansion * 0.15 * xyz_palette(rnd2);
+      } else if (fx_mode > 4.5 && fx_mode < 5.5) {
+        // SPIRAL BURST: smooth, reversible helical displacement with curved flight paths.
+        // sin(pi*phase) provides zero displacement at both ends; smoothstep creates a soft hold.
+        float envelope = pow(max(sin(3.14159265 * phase), 0.0), 0.78);
+        vec3 jitter = normalize(vec3(rnd-.5, rnd2-.5, rnd3-.5) + vec3(0.0001));
+        float angle = envelope * amount * (3.0 + 7.0 * rnd) + phase * envelope * (2.0 + rnd2*4.0);
+        float cs = cos(angle), sn = sin(angle);
+        float spiralRadius = envelope * amount * radius * (0.20 + 0.55*rnd);
+        vec2 p = origin.xy;
+        vec2 shifted = vec2(cs * p.x - sn * p.y, sn * p.x + cs * p.y);
+        vec2 swirl = vec2(cos(angle + rnd * 6.2831853), sin(angle + rnd * 6.2831853));
+        pos.xy = shifted * (1.0 + envelope * 0.28 * amount) + spiralRadius * swirl + jitter.xy * spiralRadius * 0.35;
+        pos.z = origin.z + envelope * amount * radius * (0.55 * (rnd3-0.5) + 0.24*sin(angle+rnd2*6.2831853));
+        mx *= 1.0 - 0.22*envelope;
+        color.rgb += envelope * 0.18 * xyz_palette(rnd2);
+      } else if (fx_mode > 5.5 && fx_mode < 6.5) {
+        // FIRE: glow, embers and mild heat-distortion on the model itself.
+        float envelope = pow(max(sin(3.14159265 * phase), 0.0), 0.7);
+        float h = clamp((origin.z + radius * 0.35) / max(radius * 0.9, 0.001), 0.0, 1.0);
+        float edge = 1.0 - clamp(length(origin.xy) / max(radius * 0.55, 0.001), 0.0, 1.0);
+        float flicker = 0.45 + 0.55 * sin(phase * 24.0 + rnd * 12.0 + origin.z * 0.03);
+        float lick = pow(max(0.0, 1.0 - h), 1.8) * (0.45 + 0.55 * rnd2) + edge * 0.35;
+        float hot = envelope * amount * lick * max(0.0, flicker);
+        vec3 flame = mix(vec3(1.0,0.18,0.02), vec3(1.0,0.82,0.10), clamp(1.0 - h * 1.3 + rnd3 * 0.15, 0.0, 1.0));
+        color.rgb = mix(color.rgb, max(color.rgb, flame), clamp(hot * 0.7, 0.0, 1.0));
+        color.rgb += hot * 0.6 * vec3(1.0, 0.34 + 0.3*rnd, 0.08);
+        vec2 wobble = vec2(sin(origin.z * 0.05 + phase * 12.0 + rnd * 6.2831853), cos(origin.z * 0.045 + phase * 10.0 + rnd2 * 6.2831853));
+        pos.xy += wobble * radius * 0.015 * hot;
+        pos.z += radius * 0.030 * hot * (0.4 + rnd3);
+        mx *= 1.0 - 0.10 * hot;
+      } else {
+        // True per-splat radial reveal from the origin; final geometry unchanged.
+        float d = length(origin);
+        float edge = phase * radius * 1.2;
+        float width = max(radius * 0.08, 0.01);
+        float blend = smoothstep(d - width, d + width, edge);
+        mx *= max(blend, 0.000001);
+        if (fx_mode > 3.5) {
+          float band = exp(-pow((d-edge) / width, 2.0));
+          color.rgb += band * 0.65 * xyz_palette(d / radius * 3.0);
+        }
+      }
+    }
+  ]]></action>
+</krpano>
