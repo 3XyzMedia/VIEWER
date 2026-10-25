@@ -287,7 +287,7 @@ input[type=range]{width:100%;margin:7px 0 12px;cursor:pointer}
 <div class="section" id="videoSection"><div class="row"><span class="label">🎞 Плавающее видео</span></div><input id="videoUrl" class="weather-select" type="text" value="/VIEWER/video/G_1.mp4" placeholder="/VIEWER/video/G_1.mp4 или прямая MP4-ссылка"><div class="buttons"><button class="action" id="videoOpen">▶ Видео</button><button class="action" id="videoClose">Скрыть</button></div><div class="small">MP4 лежит в корневой папке VIEWER/video/. Укажи /VIEWER/video/G_1.mp4 или прямой URL. Кнопка VIDEO и путь передаются в ссылке.</div></div>
 <div class="section" style="display:none"><div class="row"><span class="label">✨ Показ модели</span></div><div class="buttons"><button class="action" id="modelReveal">◉ REVEAL</button></div><div class="small">Тестовое проявление через временное изменение размера splat; настоящий разлёт отдельных Gaussian требует возможностей движка krpano.</div></div>
   <div class="section"><label class="row" for="shareFx27"><span class="label">Передавать ✨ выбранный эффект</span><input id="shareFx27" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareFxLab29"><span class="label">Передавать ⚛ панель эффектов модели</span><input id="shareFxLab29" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label><div class="small">Эффект: получатель запускает одну выбранную анимацию кнопкой ✨ FX. Панель: разрешает получателю открывать LAB, выбирать и настраивать все эффекты. Галочки независимы.</div></div>
-  <div class="section"><label class="row" for="shareTour"><span class="label">Передавать 🎬 TOUR получателю</span><input id="shareTour" type="checkbox" checked style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareLogoMorph"><span class="label">Передавать ⚛ LOGO MORPH v46 по кнопке 3XyzMedia</span><input id="shareLogoMorph" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareVideo"><span class="label">Передавать ▣ VIDEO получателю</span><input id="shareVideo" type="checkbox" checked style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareSettings"><span class="label">Передать ПОЛНУЮ STUDIO (вместо зрительской версии)</span><input id="shareSettings" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label><div class="small">ВЫКЛЮЧЕНО (обычно) — облегчённый Viewer без студийных инструментов. ВКЛЮЧЕНО — полная STUDIO. Для зрителя отдельный минимальный Viewer: TOUR, VIDEO и Gaussian FX подключаются по необходимости. Полная STUDIO передаётся только по галочке.</div><div class="buttons"><button class="action primary" id="saveView">&#128190; Сохранить вид</button><button class="action" id="loadView">&#8599; Открыть сохранённый</button><button class="action" id="copyLink">&#128279; Копировать ссылку</button><button class="action" id="clearView">&times; Удалить</button></div>
+  <div class="section"><label class="row" for="shareTour"><span class="label">Передавать 🎬 TOUR получателю</span><input id="shareTour" type="checkbox" checked style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareLogoMorph"><span class="label">Передавать ⚛ LOGO MORPH v46 FIXED по кнопке 3XyzMedia</span><input id="shareLogoMorph" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareVideo"><span class="label">Передавать ▣ VIDEO получателю</span><input id="shareVideo" type="checkbox" checked style="width:18px;height:18px;accent-color:#48f3ff"></label><label class="row" for="shareSettings"><span class="label">Передать ПОЛНУЮ STUDIO (вместо зрительской версии)</span><input id="shareSettings" type="checkbox" style="width:18px;height:18px;accent-color:#48f3ff"></label><div class="small">ВЫКЛЮЧЕНО (обычно) — облегчённый Viewer без студийных инструментов. ВКЛЮЧЕНО — полная STUDIO. Для зрителя отдельный минимальный Viewer: TOUR, VIDEO и Gaussian FX подключаются по необходимости. Полная STUDIO передаётся только по галочке.</div><div class="buttons"><button class="action primary" id="saveView">&#128190; Сохранить вид</button><button class="action" id="loadView">&#8599; Открыть сохранённый</button><button class="action" id="copyLink">&#128279; Копировать ссылку</button><button class="action" id="clearView">&times; Удалить</button></div>
 <input id="shareUrl" readonly value="" aria-label="Ссылка для шаринга"><a id="shareLink" href="#" target="_blank" rel="noopener">Открыть эту ссылку</a><div class="small">Ссылка сохраняет модель, ракурс, погоду, звёзды, метеоры, салют, звук и музыку.</div></div>
 </div></div>
 <div id="videoFloat" style="display:none;position:fixed;left:16px;bottom:100px;width:min(320px,75vw);z-index:85;background:#080e1b;border:2px solid #38ffdb;border-radius:13px;box-shadow:0 0 22px #18ffd877,0 0 50px #15aaff55;padding:7px;touch-action:none;box-sizing:border-box">
@@ -362,11 +362,22 @@ const xyzStartupModel=initialParams.get('model') || 'SOY2.ply';
 
 const xyzMobile = (navigator.maxTouchPoints>0 && window.innerWidth<900);
 const requestedSceneXml = initialParams.get('xml') || initialParams.get('scene');
-const xyzMorphTestScene = !requestedSceneXml || /^scene_logo_v(?:5|6|7|8|9|10|11|12|13|14|15|16|17|38|39|40|41|42)(?:_mobile)?\.xml$/.test(requestedSceneXml);
+// SAFE v46 FIXED: any old scene_logo_v*.xml SHARE link must use our own
+// tested XML and shader, never silently pull an outdated scene with custom uniforms.
+const xyzMorphTestScene = !requestedSceneXml || /(?:^|\/)scene_logo_v\d+(?:_[a-z0-9_-]+)?\.xml(?:[?#].*)?$/i.test(requestedSceneXml);
 const sceneXml = xyzMorphTestScene
-  ? (xyzMobile ? 'scene_logo_v46_mobile.xml' : 'scene_logo_v46.xml')
+  ? (xyzMobile ? 'scene_logo_v46_fixed_mobile.xml' : 'scene_logo_v46_fixed.xml')
   : requestedSceneXml;
 
+// Emergency plain-model mode uses the same studio but no custom splat shader.
+if (requestedSceneXml === 'scene_plain_model_v46.xml') {
+  window.addEventListener('DOMContentLoaded', () => {
+    const panel = document.getElementById('logoMorphTest');
+    const button = document.getElementById('logoMorphShow');
+    if (panel) panel.style.display = 'none';
+    if (button) button.style.display = 'none';
+  });
+}
 // Screen-space weather, stars and meteors. Overlays leave model coordinates untouched.
 const snowCanvas = document.getElementById('snowOverlay');
 const snowCtx = snowCanvas.getContext('2d', { alpha: true });
@@ -1615,6 +1626,7 @@ tq('modelReveal').addEventListener('click',()=>{const old=Number(scaleEl.value),
 // When interacting manually, stop programmed camera motion.
 surface.addEventListener('pointerdown',stopTour);surface.addEventListener('wheel',stopTour,{passive:true});
 document.getElementById('xyzModelInput').value=xyzStartupModel;
+console.info('[3XyzMedia v46 FIXED] XML loaded:',sceneXml);
 embedpano({target:'pano',xml:sceneXml,initvars:{xyz_modelply:xyzResolvePLY(xyzStartupModel)||xyzResolvePLY('SOY2.ply')},html5:'only+webgl',focus:true,mobilescale:1,bgcolor:'#05070b',onready:async function(krpano){k=krpano;window.xyzMorphKrpano=krpano;await init();document.getElementById('weatherIntensityValue').textContent=weatherIntensity+'%';document.getElementById('weatherSpeedValue').textContent=weatherSpeed.toFixed(2)+'×';const _p=document.getElementById('panel');axesCanvas.classList.toggle('shifted',!_p.classList.contains('collapsed'));drawAxes();startScreenWeather();resizeAtmosphere();applySky(skyMode);applyRainRipples();applyFireworks();applyMeteor();applyShareUiMode();showToast('3XyzMedia RGB Bridge готов ✓')}});
 
 // Start with automatic quality: modest canvas resolution on phones, higher quality on desktop.
@@ -1836,7 +1848,7 @@ function xyzFire39StartFx(duration){
 </script>
 
 <div id="logoMorphTest" style="position:fixed;z-index:999999;top:214px;left:12px;width:min(355px,calc(100vw - 28px));padding:10px 12px;box-sizing:border-box;border:1px solid #2596bb;background:rgba(4,12,22,.95);border-radius:12px;color:#e3faff;font:13px Arial,sans-serif">
-<div id="logoMorphHeader"><strong>⚛ LOGO MORPH v46 · FAST CYAN</strong><button id="logoMorphCollapse" type="button" aria-expanded="true" title="Закрыть LOGO MORPH">×</button></div>
+<div id="logoMorphHeader"><strong>⚛ LOGO MORPH v46 FIXED · FIXED</strong><button id="logoMorphCollapse" type="button" aria-expanded="true" title="Закрыть LOGO MORPH">×</button></div>
 <div id="logoMorphBody">
 <div class="morph-v8-head" style="align-items:center;gap:9px"><label><input type="checkbox" id="logoDepthFlip"> Глубина ↔</label><button id="logoV2Go" type="button" style="padding:5px 12px">▶ MORPH</button></div>
 <input id="logoMirrorX" type="checkbox" checked hidden>
@@ -1871,7 +1883,7 @@ function xyzFire39StartFx(duration){
 <button id="logoMorphShow" type="button" title="Открыть LOGO MORPH">⚛ MORPH</button>
 <div id="xyzMobileMorph12" aria-hidden="true"><div class="xyzM12Name">3XyzMedia</div></div>
 <div id="xyzMobileNeon19" aria-hidden="true"><div class="txt">3XyzMedia</div></div>
-<script src="logo_morph_v46.js?v=46safe-20261025"></script>
+<script src="logo_morph_v46_fixed.js?v=46fix20261025-20261025"></script>
 
 
 </body></html>
