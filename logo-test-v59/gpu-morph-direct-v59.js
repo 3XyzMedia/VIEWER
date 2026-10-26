@@ -26,8 +26,13 @@ mat3 ry(float a){float c=cos(a),s=sin(a);return mat3(c,0.,-s,0.,1.,0.,s,0.,c);}
 mat3 rx(float a){float c=cos(a),s=sin(a);return mat3(1.,0.,0.,0.,c,s,0.,-s,c);} 
 void main(){
   float p=clamp(uProgress,0.,1.);
-  float t = (p<=0.5) ? ease(p*2.0) : ease((1.0-p)*2.0);
-  float burst = pow(sin(3.14159265 * ((p<=0.5)? p*2.0 : (1.0-p)*2.0)), 1.15);
+  float t;
+  if (p < 0.40) t = ease(p / 0.40);
+  else if (p > 0.60) t = ease((1.0 - p) / 0.40);
+  else t = 1.0;
+  float burstIn = smoothstep(0.02, 0.20, p) * (1.0 - smoothstep(0.34, 0.42, p));
+  float burstOut = smoothstep(0.58, 0.66, p) * (1.0 - smoothstep(0.82, 0.98, p));
+  float burst = max(burstIn, burstOut);
   vec3 dir=normalize(aSeed*2.0-1.0+vec3(.001));
   vec3 swirl=normalize(cross(dir,vec3(.31,.78,.54))+vec3(.01));
   vec3 pos=mix(aSource,aTarget,t)+uSpread*burst*(dir*(0.55+0.85*aSeed.x)+swirl*0.42*sin(8.0*t+11.0*aSeed.y));
@@ -37,7 +42,7 @@ void main(){
   gl_PointSize=clamp(uSize*9.0/max(1.0,-view.z), 1.0, 14.0);
   vec3 targetColor = mix(aLabelColor, vec3(.98,.13,.20), uRedMode);
   vColor = mix(aSourceColor, targetColor, t);
-  vAlpha = smoothstep(0.10,0.23,p) * (1.0-smoothstep(0.77,0.90,p));
+  vAlpha = smoothstep(0.03,0.12,p) * (1.0-smoothstep(0.88,0.97,p));
 }`;
 const frag=`#version 300 es
 precision mediump float;
@@ -66,12 +71,12 @@ async function prepareLabel(){
 function rebuildSeed(){ seed=new Float32Array(N*3); for(let i=0;i<seed.length;i++) seed[i]=((Math.sin(i*12.9898+4.2)*43758.5453)%1+1)%1; }
 function upload(){ gl.bindVertexArray(vao); [source,target,seed,sourceColor,labelColor].forEach((a,idx)=>{ gl.bindBuffer(gl.ARRAY_BUFFER,buffers[idx]); gl.bufferSubData(gl.ARRAY_BUFFER,0,a); }); gl.bindVertexArray(null); }
 function camera(){ try{return window.xyzMorphCameraState?window.xyzMorphCameraState():null}catch(e){return null;} }
-function setStatus(p){ if(numEl) numEl.textContent=(p*100).toFixed(1)+'%'; if(slider&&document.activeElement!==slider) slider.value=String((p*100).toFixed(1)); if(statusEl){ statusEl.textContent = p<.5 ? 'Сплаты модели → облако → Blender PLY RGB' : 'Blender PLY RGB → облако → сплаты модели'; } }
-function drawFrame(p){ currentP=p; if(!gl||!source||!target) return; const dpr=Math.min(devicePixelRatio||1,1.5), w=Math.max(1,Math.floor(innerWidth*dpr)), h=Math.max(1,Math.floor(innerHeight*dpr)); if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h);} const cam=camera(), yaw=((cam&&cam.o?cam.o[0]:0)||0)*Math.PI/180, pitch=((cam&&cam.o?cam.o[1]:0)||0)*Math.PI/180; const size=cfg('Size'); const spread=cfg('Spread'); const mix=Math.min(p,1-p); const vis=(x)=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);}; setPanoOpacity(1-vis((mix-.11)/.15)); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT); gl.useProgram(prog); gl.bindVertexArray(vao); gl.uniform1f(uniforms.uProgress,p); gl.uniform1f(uniforms.uSpread,spread); gl.uniform1f(uniforms.uSize,size); gl.uniform1f(uniforms.uAspect,w/h); gl.uniform1f(uniforms.uYaw,yaw); gl.uniform1f(uniforms.uPitch,pitch); gl.uniform1f(uniforms.uDistance,11.2); gl.uniform1f(uniforms.uRedMode,(colorSel?.value==='red')?1.0:0.0); gl.drawArrays(gl.POINTS,0,N); setStatus(p); }
+function setStatus(p){ if(numEl) numEl.textContent=(p*100).toFixed(1)+'%'; if(slider&&document.activeElement!==slider) slider.value=String((p*100).toFixed(1)); if(statusEl){ statusEl.textContent = p<.5 ? 'Сплаты модели → облако → Blender PLY RGB' : (p<=.6 ? 'Blender PLY RGB · пауза на тексте' : 'Blender PLY RGB → облако → сплаты модели'); } }
+function drawFrame(p){ currentP=p; if(!gl||!source||!target) return; const dpr=Math.min(devicePixelRatio||1,1.5), w=Math.max(1,Math.floor(innerWidth*dpr)), h=Math.max(1,Math.floor(innerHeight*dpr)); if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h);} const cam=camera(), yaw=((cam&&cam.o?cam.o[0]:0)||0)*Math.PI/180, pitch=((cam&&cam.o?cam.o[1]:0)||0)*Math.PI/180; const size=cfg('Size'); const spread=cfg('Spread'); const vis=(x)=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);}; const textHold = (p<0.40) ? vis(p/0.40) : (p>0.60 ? vis((1-p)/0.40) : 1); setPanoOpacity(1-textHold); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT); gl.useProgram(prog); gl.bindVertexArray(vao); gl.uniform1f(uniforms.uProgress,p); gl.uniform1f(uniforms.uSpread,spread); gl.uniform1f(uniforms.uSize,size); gl.uniform1f(uniforms.uAspect,w/h); gl.uniform1f(uniforms.uYaw,yaw); gl.uniform1f(uniforms.uPitch,pitch); gl.uniform1f(uniforms.uDistance,11.2); gl.uniform1f(uniforms.uRedMode,(colorSel?.value==='red')?1.0:0.0); gl.drawArrays(gl.POINTS,0,N); setStatus(p); }
 function finish(){ active=false; cancelAnimationFrame(raf); canvas.classList.remove('active'); document.body.classList.remove('gpu20k-active'); setPanoOpacity(1); hideToast(); if(playBtn) playBtn.textContent='▶ 20K'; }
-function animate(now){ if(!active) return; const d=cfg('Duration')*1000, hold=cfg('Hold')*1000, travel=Math.max(1000,d-hold), elapsed=Math.max(0,now-stamp); let p; if(elapsed<travel/2.0) p=.5*(elapsed/(travel/2.0)); else if(elapsed<travel/2.0+hold) p=.5; else p=.5+.5*Math.min(1.0,(elapsed-travel/2.0-hold)/(travel/2.0)); drawFrame(p); if(elapsed>=travel+hold){ finish(); return; } raf=requestAnimationFrame(animate); }
+function animate(now){ if(!active) return; const move=Math.max(1000,cfg('Duration')*1000), hold=Math.max(0,cfg('Hold')*1000), half=move/2.0, elapsed=Math.max(0,now-stamp); let p; if(elapsed<half) p=.5*(elapsed/half); else if(elapsed<half+hold) p=.5; else p=.5+.5*Math.min(1.0,(elapsed-half-hold)/half); drawFrame(p); if(elapsed>=move+hold){ finish(); return; } raf=requestAnimationFrame(animate); }
 async function ensureReady(){ if(MOBILE) throw Error('20K отключён на смартфоне'); if(ready) return; if(loadingPromise) return loadingPromise; loadingPromise=(async()=>{ initGL(); await prepareModel(); await prepareLabel(); rebuildSeed(); upload(); ready=true; })(); try{ await loadingPromise; } finally { loadingPromise=null; } }
-async function play(){ try{ await ensureReady(); active=true; canvas.classList.add('active'); document.body.classList.add('gpu20k-active'); stamp=performance.now()-(currentP<=0.98?currentP:0.0)*Math.max(1000,(cfg('Duration')-cfg('Hold')))*1000; if(playBtn) playBtn.textContent='■ STOP'; cancelAnimationFrame(raf); raf=requestAnimationFrame(animate); } catch(e){ toast('MORPH 20K: '+(e.message||String(e))); } }
+async function play(){ try{ await ensureReady(); active=true; canvas.classList.add('active'); document.body.classList.add('gpu20k-active'); const move=Math.max(1000,cfg('Duration')*1000), hold=Math.max(0,cfg('Hold')*1000), half=move/2.0; let offset=0; if(currentP<=0.5) offset=(currentP/0.5)*half; else offset=half+hold+((currentP-0.5)/0.5)*half; stamp=performance.now()-offset; if(playBtn) playBtn.textContent='■ STOP'; cancelAnimationFrame(raf); raf=requestAnimationFrame(animate); } catch(e){ toast('MORPH 20K: '+(e.message||String(e))); } }
 function stop(){ active=false; cancelAnimationFrame(raf); if(playBtn) playBtn.textContent='▶ 20K'; drawFrame(currentP); }
 if(slider){ slider.addEventListener('input', async()=>{ try{ await ensureReady(); cancelAnimationFrame(raf); active=false; canvas.classList.add('active'); document.body.classList.add('gpu20k-active'); drawFrame(Number(slider.value)/100.0); if(playBtn) playBtn.textContent='▶ 20K'; } catch(e){ toast('MORPH 20K: '+(e.message||String(e))); } }); }
 if(playBtn) playBtn.addEventListener('click',()=>{ if(active) stop(); else play(); });
